@@ -3,6 +3,7 @@
 import {
   ArrowRight,
   ArrowUpRight,
+  BarChart3,
   BookOpenCheck,
   Building2,
   Calculator,
@@ -29,11 +30,13 @@ import {
   Search,
   ShieldCheck,
   Sparkles,
+  UploadCloud,
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { competitors } from "./competitor-data";
 import { marketSegments, verticals } from "./market-data";
+import { importContract, sourceRegistry } from "./source-registry";
 
 type Reliability = "Verified Fact" | "Company Statement" | "Analyst Inference" | "Source Structure";
 
@@ -72,6 +75,25 @@ type FeedResponse = {
 
 type FocusMode = "market" | "competitor";
 
+type IntelligenceFeed = {
+  retrievedAt: string;
+  economic: {
+    status: "live" | "degraded";
+    source: string;
+    records: Array<{ id: string; label: string; naics: string; employment: number | null; establishments: number | null; employmentGrowth: number | null; establishmentGrowth: number | null; averageWeeklyWage: number | null; period: string; status: "live" | "unavailable" }>;
+  };
+  regulatory: {
+    status: "live" | "degraded";
+    source: string;
+    records: Array<{ id: string; title: string; published: string; verticals: string[]; agencies: string[]; url: string; applicabilityStatus: string }>;
+  };
+  injury: {
+    status: "bulk-refresh";
+    sources: Array<{ name: string; history: string; linkage: string; url: string }>;
+    publicationRule: string;
+  };
+};
+
 const navigation = [
   { label: "Navigator", icon: Radar },
   { label: "Industries", icon: Factory },
@@ -80,6 +102,7 @@ const navigation = [
   { label: "Competitors", icon: Building2 },
   { label: "Sustainability", icon: Leaf },
   { label: "Corporate Activity", icon: Network },
+  { label: "Data Operations", icon: UploadCloud },
   { label: "Sources", icon: Database },
 ];
 
@@ -239,6 +262,9 @@ export default function Home() {
   const [selectedGeography, setSelectedGeography] = useState("North America");
   const [focusMode, setFocusMode] = useState<FocusMode>("market");
   const [selectedCompetitorId, setSelectedCompetitorId] = useState(competitors[0].id);
+  const [intelligenceFeed, setIntelligenceFeed] = useState<IntelligenceFeed | null>(null);
+  const [dataFeedStatus, setDataFeedStatus] = useState<"loading" | "live" | "degraded">("loading");
+  const [importCandidate, setImportCandidate] = useState<{ name: string; size: number; type: string; header: string[] } | null>(null);
 
   useEffect(() => {
     let activeRequest = true;
@@ -269,6 +295,21 @@ export default function Home() {
       })
       .catch(() => {
         if (activeRequest) setFeedStatus("degraded");
+      });
+    return () => { activeRequest = false; };
+  }, []);
+
+  useEffect(() => {
+    let activeRequest = true;
+    fetch("/api/intelligence")
+      .then((response) => response.json())
+      .then((payload: IntelligenceFeed) => {
+        if (!activeRequest) return;
+        setIntelligenceFeed(payload);
+        setDataFeedStatus(payload.economic.status === "live" || payload.regulatory.status === "live" ? "live" : "degraded");
+      })
+      .catch(() => {
+        if (activeRequest) setDataFeedStatus("degraded");
       });
     return () => { activeRequest = false; };
   }, []);
@@ -376,6 +417,14 @@ export default function Home() {
     URL.revokeObjectURL(url);
   };
 
+  const inspectImport = async (file: File | undefined) => {
+    if (!file) return;
+    const headerText = await file.slice(0, 65536).text();
+    const firstLine = headerText.split(/\r?\n/)[0] ?? "";
+    const delimiter = firstLine.includes("\t") ? "\t" : ",";
+    setImportCandidate({ name: file.name, size: file.size, type: file.type || "Unknown", header: firstLine.split(delimiter).map((value) => value.replace(/^"|"$/g, "").trim()).filter(Boolean) });
+  };
+
   return (
     <main className="app-shell">
       <aside className={menuOpen ? "sidebar open" : "sidebar"}>
@@ -405,11 +454,46 @@ export default function Home() {
             <div className="focus-path"><small>Persistent cross-section</small><b>{focusMode === "competitor" ? `${selectedCompetitor.name} / ` : ""}{selectedVertical}{selectedSegment !== "All segments" ? ` / ${marketSegments.find((segment) => segment.id === selectedSegment)?.segment}` : ""}</b><span>{selectedGeography} · retained across every workspace</span></div>
           </section>}
           <section className="workspace-heading">
-            <div><span className="eyebrow"><FileSearch size={14} /> INTELLIGENCE WORKSPACE</span><h1>{active}</h1><p>{active === "Sources" ? "Inspect coverage, ownership, update method, and source health before trusting an output." : "Navigate evidence as connected records—not disconnected dashboard tiles."}</p></div>
-            <div className="workspace-meta"><span><b>{active === "Sources" ? sources.length : filtered.length}</b> records in view</span><button><RefreshCw size={14} /> Last structured today</button></div>
+            <div><span className="eyebrow"><FileSearch size={14} /> INTELLIGENCE WORKSPACE</span><h1>{active}</h1><p>{active === "Sources" ? "Inspect coverage, ownership, update method, and source health before trusting an output." : active === "Data Operations" ? "Control bulk imports, live connectors, schema contracts, freshness, and publication gates from one place." : "Navigate evidence as connected records—not disconnected dashboard tiles."}</p></div>
+            <div className="workspace-meta"><span><b>{active === "Sources" ? sources.length : active === "Data Operations" ? sourceRegistry.length : filtered.length}</b> {active === "Data Operations" ? "registered sources" : "records in view"}</span><button><RefreshCw size={14} /> Last structured today</button></div>
           </section>
 
-          {active === "Sources" ? (
+          {active === "Data Operations" ? (
+            <section className="data-operations">
+              <div className="operations-hero panel">
+                <div><span className="panel-kicker">Ingestion control plane</span><h2>Data-rich, evidence-safe by design</h2><p>Live APIs, CSV slices, bulk archives, controlled files, and monitored websites enter through different pipelines—but publish through one provenance contract.</p></div>
+                <div className="operations-metrics"><span><b>{sourceRegistry.length}</b> sources mapped</span><span><b>{sourceRegistry.filter((source) => source.status === "Live" || source.status === "Ready").length}</b> connector-ready</span><span><b>5</b> evidence classes</span></div>
+              </div>
+
+              <div className="operation-grid">
+                <div className="import-zone panel">
+                  <div className="operation-heading"><span><i><UploadCloud size={18} /></i><span><b>All Injuries import lane</b><small>Designed for the 100,000+ row source file</small></span></span><mark>Quarantine first</mark></div>
+                  <label className="drop-zone"><input type="file" accept=".csv,.tsv,.zip" onChange={(event) => inspectImport(event.target.files?.[0])} /><UploadCloud size={25} /><b>Select CSV, TSV, or ZIP</b><span>Files are inspected locally in this preview and are not transmitted or published.</span></label>
+                  {importCandidate ? <div className="import-inspection"><div><span>Candidate</span><b>{importCandidate.name}</b></div><div><span>Size</span><b>{(importCandidate.size / 1024 / 1024).toFixed(1)} MB</b></div><div><span>Detected columns</span><b>{importCandidate.header.length}</b></div><p>{importCandidate.header.slice(0, 8).join(" · ") || "Header inspection unavailable for compressed files"}</p></div> : <div className="import-empty">Awaiting an approved injury dataset. No private file has been imported.</div>}
+                  <div className="pipeline-steps"><span className="ready"><b>1</b> Inspect</span><i /><span><b>2</b> Quarantine</span><i /><span><b>3</b> Normalize</span><i /><span><b>4</b> Deduplicate</span><i /><span><b>5</b> Publish</span></div>
+                </div>
+
+                <div className="live-pipeline panel">
+                  <div className="operation-heading"><span><i><BarChart3 size={18} /></i><span><b>Economic activity feed</b><small>BLS QCEW · national private ownership</small></span></span><mark className={dataFeedStatus}>{dataFeedStatus}</mark></div>
+                  <div className="economic-list">{intelligenceFeed?.economic.records.map((record) => <article key={record.id}><div><b>{record.label}</b><small>NAICS {record.naics} · {record.period}</small></div><strong className={(record.employmentGrowth ?? 0) >= 0 ? "positive" : "negative"}>{record.employmentGrowth === null ? "Pending" : `${record.employmentGrowth > 0 ? "+" : ""}${record.employmentGrowth.toFixed(1)}%`}</strong><span>employment YoY</span><footer>{record.employment === null ? "Source unavailable" : `${record.employment.toLocaleString()} jobs · ${record.establishments?.toLocaleString()} establishments`}</footer></article>) ?? <div className="loading-state">Checking official QCEW slices…</div>}</div>
+                  <div className="pipeline-note"><ShieldCheck size={15} /><span>Economic signals are contextual evidence—not proof that Novara wins or losses were caused by market growth.</span></div>
+                </div>
+              </div>
+
+              <div className="regulatory-stream panel">
+                <div className="operation-heading"><span><i><BookOpenCheck size={18} /></i><span><b>Regulatory applicability stream</b><small>OSHA, EPA, and MSHA documents from the last year</small></span></span><mark className={intelligenceFeed?.regulatory.status ?? "loading"}>{intelligenceFeed?.regulatory.status ?? "loading"}</mark></div>
+                <div className="regulatory-grid">{intelligenceFeed?.regulatory.records.slice(0, 8).map((record) => <a href={record.url} target="_blank" rel="noreferrer" key={record.id}><span><b>{record.title}</b><small>{record.agencies.join(" · ")} · {record.published}</small></span><div>{record.verticals.map((vertical) => <mark key={vertical}>{vertical}</mark>)}</div><footer>{record.applicabilityStatus}<ArrowUpRight size={13} /></footer></a>) ?? <div className="loading-state">Checking the official Federal Register feed…</div>}</div>
+              </div>
+
+              <div className="source-control panel">
+                <div className="catalog-intro"><div><span className="panel-kicker">Source architecture</span><h2>Registered ingestion sources</h2></div><p>Every connector declares its owner, transport, history, join keys, update cadence, and caveat before data can enter an intelligence output.</p></div>
+                <div className="source-control-head source-control-row"><span>Source</span><span>Domain</span><span>Transport</span><span>History / cadence</span><span>Join keys</span><span>Status</span></div>
+                {sourceRegistry.map((source) => <div className="source-control-row" key={source.id}><span><b>{source.name}</b><small>{source.owner} · {source.authority}</small></span><span>{source.domain}</span><span>{source.transport}</span><span>{source.history}<small>{source.cadence}</small></span><span>{source.joinKeys.slice(0, 3).join(" · ")}</span><mark className={source.status.toLowerCase().replaceAll(" ", "-")}>{source.status}</mark></div>)}
+              </div>
+
+              <div className="schema-contract panel"><div><span className="panel-kicker">Normalized event contract</span><h2>Required before any record can publish</h2><p>Raw source fields remain intact; normalized dimensions are additive and versioned.</p></div><div>{importContract.map((field) => <span key={field.field}><code>{field.field}</code><mark className={field.required ? "required" : "optional"}>{field.required ? "Required" : "When available"}</mark><small>{field.purpose}</small></span>)}</div></div>
+            </section>
+          ) : active === "Sources" ? (
             <section className="source-catalog panel">
               <div className="catalog-intro"><div><span className="panel-kicker">System of record</span><h2>Source catalog & coverage</h2></div><p>Connectors will fail quietly into the last successful snapshot, while freshness and coverage gaps remain visible here.</p></div>
               <div className="catalog-table">
