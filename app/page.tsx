@@ -28,7 +28,7 @@ import {
   Sparkles,
   X,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type Reliability = "Verified Fact" | "Company Statement" | "Analyst Inference" | "Source Structure";
 
@@ -50,6 +50,19 @@ type IntelligenceRecord = {
   evidence: string;
   methodology: string;
   related: string[];
+};
+
+type FeedResponse = {
+  status: "live" | "degraded";
+  retrievedAt: string;
+  records: Array<{
+    documentNumber: string;
+    title: string;
+    abstract: string;
+    publicationDate: string;
+    htmlUrl: string;
+    agencies: string[];
+  }>;
 };
 
 const navigation = [
@@ -212,25 +225,62 @@ export default function Home() {
   const [industry, setIndustry] = useState("All industries");
   const [reliability, setReliability] = useState("All reliability");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [liveRecords, setLiveRecords] = useState<IntelligenceRecord[]>([]);
+  const [feedStatus, setFeedStatus] = useState<"loading" | "live" | "degraded">("loading");
+
+  useEffect(() => {
+    let activeRequest = true;
+    fetch("/api/regulations")
+      .then((response) => response.json())
+      .then((payload: FeedResponse) => {
+        if (!activeRequest) return;
+        setFeedStatus(payload.status);
+        setLiveRecords(payload.records.map((item) => ({
+          id: `fr-${item.documentNumber}`,
+          domain: "Regulations",
+          title: item.title,
+          summary: item.abstract || "Federal Register document available for structured review.",
+          industries: ["Requires applicability review"],
+          geographies: ["United States"],
+          agencies: item.agencies,
+          entities: ["Federal rulemaking"],
+          reliability: "Verified Fact",
+          published: item.publicationDate,
+          retrieved: payload.retrievedAt.slice(0, 10),
+          sourceName: "Federal Register API",
+          sourceUrl: item.htmlUrl,
+          sourceType: "Live primary government feed",
+          evidence: "This record was retrieved directly from the Federal Register public API. Applicability and business implications require separate review.",
+          methodology: "Preserve the Federal Register document number and publication date. Do not infer obligations, effective dates, or affected industries from the title alone.",
+          related: ["Agency docket", "eCFR comparison", "Applicability review", "Industry mapping"],
+        })));
+      })
+      .catch(() => {
+        if (activeRequest) setFeedStatus("degraded");
+      });
+    return () => { activeRequest = false; };
+  }, []);
+
+  const allRecords = useMemo(() => [...liveRecords, ...records], [liveRecords]);
 
   const filtered = useMemo(() => {
     const text = query.toLowerCase().trim();
-    return records.filter((record) => {
+    return allRecords.filter((record) => {
       const domainMatch = ["Navigator", "Sources"].includes(active) || record.domain === active;
       const industryMatch = industry === "All industries" || record.industries.includes(industry);
       const reliabilityMatch = reliability === "All reliability" || record.reliability === reliability;
       const haystack = [record.title, record.summary, record.domain, ...record.industries, ...record.geographies, ...record.agencies, ...record.entities].join(" ").toLowerCase();
       return domainMatch && industryMatch && reliabilityMatch && (!text || haystack.includes(text));
     });
-  }, [active, industry, query, reliability]);
+  }, [active, allRecords, industry, query, reliability]);
 
-  const selected = records.find((record) => record.id === selectedId) ?? filtered[0] ?? records[0];
+  const selected = allRecords.find((record) => record.id === selectedId) ?? filtered[0] ?? allRecords[0];
 
   const selectNavigation = (label: string) => {
     setActive(label);
     setMenuOpen(false);
     if (label !== "Sources") {
-      const first = records.find((record) => label === "Navigator" || record.domain === label);
+      const first = allRecords.find((record) => label === "Navigator" || record.domain === label);
       if (first) setSelectedId(first.id);
     }
   };
@@ -241,6 +291,16 @@ export default function Home() {
     const anchor = document.createElement("a");
     anchor.href = url;
     anchor.download = `${selected.id}.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportBattlecard = () => {
+    const markdown = `# Evidence-Backed Battlecard\n\n**Status:** Draft — source review required\n**Exported:** ${new Date().toISOString()}\n\n## Intelligence record\n${selected.title}\n\n## What the evidence supports\n${selected.evidence}\n\n## Source\n- ${selected.sourceName}: ${selected.sourceUrl}\n- Reliability: ${selected.reliability}\n- Published: ${selected.published}\n- Retrieved: ${selected.retrieved}\n\n## Method and caveat\n${selected.methodology}\n\n## Connected topics\n${selected.related.map((item) => `- ${item}`).join("\n")}\n\n## Required before sales use\n- Verify competitor identity and current packaging\n- Source each feature and functionality claim\n- Separate marketed capability from demonstrated capability\n- Add approved Novara positioning and objection handling\n`;
+    const url = URL.createObjectURL(new Blob([markdown], { type: "text/markdown" }));
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "evidence-backed-battlecard.md";
     anchor.click();
     URL.revokeObjectURL(url);
   };
@@ -260,7 +320,7 @@ export default function Home() {
         <header className="topbar">
           <button className="mobile-menu" onClick={() => setMenuOpen(true)} aria-label="Open navigation"><Menu size={21} /></button>
           <div className="search-wrap"><Search size={17} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search claims, agencies, companies, NAICS, or geography" /><kbd>⌘ K</kbd></div>
-          <div className="topbar-actions"><span className="system-pill"><span /> Source policy active</span><button className="export-button" onClick={exportRecord}><Download size={16} /> Export record</button></div>
+          <div className="topbar-actions"><span className={`system-pill ${feedStatus}`}><span /> {feedStatus === "live" ? "Federal Register live" : feedStatus === "degraded" ? "Using source snapshot" : "Checking sources"}</span><button className="export-button" onClick={exportRecord}><Download size={16} /> Export record</button></div>
         </header>
 
         <div className="content intelligence-content">
@@ -281,6 +341,8 @@ export default function Home() {
             </section>
           ) : (
             <>
+              {active === "Competitors" && <section className="battlecard-bar"><div><span className="panel-kicker">Evidence-gated output</span><h2>Battlecard assembly</h2><p>Exports carry source, date, reliability, and caveats. Unsupported feature claims remain blocked.</p></div><div className="gate-list"><span><Check size={12} /> Source attached</span><span><Check size={12} /> Reliability labeled</span><span className="pending">Packaging review required</span></div><button onClick={exportBattlecard}><Download size={14} /> Export draft battlecard</button></section>}
+              {active === "Regulations" && <section className={`feed-bar ${feedStatus}`}><div><RefreshCw size={15} /><span><b>Federal Register connector</b><small>{feedStatus === "live" ? `${liveRecords.length} live OSHA documents normalized with primary-source links` : feedStatus === "degraded" ? "Live feed unavailable; trusted static records remain available without an error screen" : "Checking the official public feed"}</small></span></div><mark>{feedStatus}</mark></section>}
               <section className="filter-bar">
                 <span><Filter size={14} /> Refine</span>
                 <label>Industry<select value={industry} onChange={(event) => setIndustry(event.target.value)}><option>All industries</option><option>Construction</option><option>Manufacturing</option><option>Energy & Utilities</option></select></label>
