@@ -1,248 +1,313 @@
 "use client";
 
 import {
-  Activity,
+  ArrowRight,
   ArrowUpRight,
-  Bell,
   BookOpenCheck,
   Building2,
-  ChartNoAxesCombined,
   Check,
   ChevronDown,
+  ChevronRight,
   CircleDot,
   Database,
   Download,
+  ExternalLink,
   Factory,
+  FileCheck2,
   FileSearch,
+  Filter,
   Globe2,
   HardHat,
   Leaf,
   Menu,
   Network,
   Radar,
+  RefreshCw,
   Search,
   ShieldCheck,
   Sparkles,
-  TrendingUp,
-  TriangleAlert,
-  Users,
   X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 
+type Reliability = "Verified Fact" | "Company Statement" | "Analyst Inference" | "Source Structure";
+
+type IntelligenceRecord = {
+  id: string;
+  domain: string;
+  title: string;
+  summary: string;
+  industries: string[];
+  geographies: string[];
+  agencies: string[];
+  entities: string[];
+  reliability: Reliability;
+  published: string;
+  retrieved: string;
+  sourceName: string;
+  sourceUrl: string;
+  sourceType: string;
+  evidence: string;
+  methodology: string;
+  related: string[];
+};
+
 const navigation = [
-  { label: "Signal Room", icon: Radar },
-  { label: "Markets", icon: ChartNoAxesCombined },
+  { label: "Navigator", icon: Radar },
+  { label: "Industries", icon: Factory },
   { label: "Enforcement & Injuries", icon: HardHat },
-  { label: "Compliance", icon: BookOpenCheck },
+  { label: "Regulations", icon: BookOpenCheck },
   { label: "Competitors", icon: Building2 },
   { label: "Sustainability", icon: Leaf },
   { label: "Corporate Activity", icon: Network },
   { label: "Sources", icon: Database },
 ];
 
-const signals = [
+const records: IntelligenceRecord[] = [
   {
-    type: "Regulatory",
-    title: "Heat standard activity is accelerating across priority states",
-    detail: "Federal and state activity indicates growing compliance complexity for outdoor and high-heat workforces.",
-    source: "Federal Register + state agency scan",
-    time: "Updated 2h ago",
-    confidence: "High confidence",
-    accent: "orange",
-    icon: BookOpenCheck,
+    id: "reg-heat-001",
+    domain: "Regulations",
+    title: "Heat Injury and Illness Prevention rulemaking",
+    summary: "A source-traceable regulatory record designed to connect rulemaking activity to affected industries, operating conditions, and applicable Novara capabilities.",
+    industries: ["Construction", "Manufacturing", "Energy & Utilities"],
+    geographies: ["United States"],
+    agencies: ["OSHA", "Department of Labor"],
+    entities: ["Outdoor workforces", "High-heat facilities"],
+    reliability: "Verified Fact",
+    published: "2024-08-30",
+    retrieved: "2026-08-19",
+    sourceName: "Federal Register",
+    sourceUrl: "https://www.federalregister.gov/documents/2024/08/30/2024-14824/heat-injury-and-illness-prevention-in-outdoor-and-indoor-work-settings",
+    sourceType: "Primary government source",
+    evidence: "The Federal Register document is the controlling public record for the proposed rule and includes the agency, docket, dates, and complete text.",
+    methodology: "Store the document as the primary record; separate effective dates, deadlines, requirements, and analyst implications into individually sourced fields.",
+    related: ["OSHA enforcement activity", "State heat standards", "Incident management", "Training"],
   },
   {
-    type: "Market",
-    title: "Data center construction remains a high-intensity growth segment",
-    detail: "Employment, project activity, and multi-employer risk converge in several Novara-priority geographies.",
-    source: "BLS + Census + verified public sources",
-    time: "Updated today",
-    confidence: "Verified inputs",
-    accent: "violet",
-    icon: TrendingUp,
+    id: "enf-osha-001",
+    domain: "Enforcement & Injuries",
+    title: "OSHA inspection and citation record structure",
+    summary: "A normalized inspection record linking establishment, inspection, citation, penalty, NAICS, geography, and source-level identifiers without importing legacy Ocean data.",
+    industries: ["All priority industries"],
+    geographies: ["United States", "State Plan jurisdictions"],
+    agencies: ["OSHA", "State OSHA Plans"],
+    entities: ["Establishments", "Inspections", "Citations"],
+    reliability: "Source Structure",
+    published: "Continuously updated",
+    retrieved: "2026-08-19",
+    sourceName: "OSHA Data",
+    sourceUrl: "https://www.osha.gov/data",
+    sourceType: "Primary government data portal",
+    evidence: "OSHA publishes inspection, citation, severe injury, fatality, and injury and illness datasets through its official data portal.",
+    methodology: "Preserve OSHA identifiers and original fields, then add separate normalized organization, location, NAICS, event, and confidence entities.",
+    related: ["Severe injuries", "Fatalities", "Repeat inspections", "NAICS intensity"],
   },
   {
-    type: "Competitive",
-    title: "Competitor messaging is shifting from compliance to operational risk",
-    detail: "Three tracked vendors increased emphasis on AI-assisted risk prediction and connected operations.",
-    source: "Official sites + press releases",
-    time: "Updated yesterday",
-    confidence: "Analyst inference",
-    accent: "coral",
-    icon: FileSearch,
+    id: "market-qcew-001",
+    domain: "Industries",
+    title: "Employment and establishment growth by NAICS and geography",
+    summary: "A market record structure for comparing employment, wages, establishment counts, and location quotients across Novara-priority segments.",
+    industries: ["Construction", "Manufacturing", "Mining", "Utilities", "Waste & Water"],
+    geographies: ["United States", "State", "County", "Metro"],
+    agencies: ["Bureau of Labor Statistics"],
+    entities: ["NAICS", "Labor markets", "Establishments"],
+    reliability: "Source Structure",
+    published: "Quarterly",
+    retrieved: "2026-08-19",
+    sourceName: "BLS QCEW Open Data",
+    sourceUrl: "https://www.bls.gov/cew/additional-resources/open-data/home.htm",
+    sourceType: "Primary government dataset",
+    evidence: "QCEW provides employment, wages, establishment counts, and location quotients by industry and geography.",
+    methodology: "Retain period, ownership, area, and NAICS dimensions. Never compare periods or geographies without recording denominator and revision status.",
+    related: ["Census business counts", "BEA industry output", "Hiring demand", "Compliance intensity"],
+  },
+  {
+    id: "env-echo-001",
+    domain: "Sustainability",
+    title: "Facility environmental compliance and enforcement profile",
+    summary: "A facility-level environmental record connecting regulated programs, compliance status, enforcement history, and corporate relationships.",
+    industries: ["Manufacturing", "Energy", "Waste Management", "Water Management"],
+    geographies: ["United States", "State", "Watershed"],
+    agencies: ["EPA", "State environmental agencies"],
+    entities: ["Facilities", "Parent companies", "Regulated programs"],
+    reliability: "Verified Fact",
+    published: "Source dependent",
+    retrieved: "2026-08-19",
+    sourceName: "EPA ECHO",
+    sourceUrl: "https://echo.epa.gov/tools/web-services",
+    sourceType: "Primary government web service",
+    evidence: "ECHO exposes facility, Clean Air Act, Clean Water Act, RCRA, enforcement case, and corporate compliance services.",
+    methodology: "Use program-specific identifiers and preserve reporting period. Treat current compliance status separately from historical enforcement events.",
+    related: ["Hazardous waste", "Air emissions", "Water discharge", "Ensogo sustainability intelligence"],
+  },
+  {
+    id: "corp-ensogo-001",
+    domain: "Corporate Activity",
+    title: "Novara acquisition of Ensogo",
+    summary: "A company-statement record capturing a strategic transaction, stated rationale, capability implications, and the source language that supports each claim.",
+    industries: ["EHS software", "Sustainability software"],
+    geographies: ["North America", "International"],
+    agencies: [],
+    entities: ["Novara", "Ensogo"],
+    reliability: "Company Statement",
+    published: "2026-06-09",
+    retrieved: "2026-08-19",
+    sourceName: "Novara Press Release",
+    sourceUrl: "https://novara.com/blog/novara-acquires-ensogo-to-accelerate-ai-powered-operational-risk-management-and-sustainability-strategy/",
+    sourceType: "Official company statement",
+    evidence: "Novara announced its acquisition of Ensogo and described the intended combination of operational risk, AI, and sustainability capabilities.",
+    methodology: "Attribute strategic rationale to the company. Track subsequent product evidence separately before treating stated integration plans as delivered capability.",
+    related: ["Sustainability modules", "Operational risk", "AI capabilities", "Product integration"],
+  },
+  {
+    id: "comp-model-001",
+    domain: "Competitors",
+    title: "Competitor module and capability evidence model",
+    summary: "A structured competitor profile that distinguishes marketed capability, documented functionality, customer evidence, analyst interpretation, and unknowns.",
+    industries: ["EHS software", "Contractor management", "Sustainability"],
+    geographies: ["North America"],
+    agencies: [],
+    entities: ["Competitors", "Modules", "Features", "Messaging"],
+    reliability: "Source Structure",
+    published: "Continuously updated",
+    retrieved: "2026-08-19",
+    sourceName: "Approved official-source scan",
+    sourceUrl: "https://novara.com/ehs-software/",
+    sourceType: "Reference structure",
+    evidence: "Each feature assertion will require a direct official product, release-note, press-release, filing, or approved analyst source before publication.",
+    methodology: "Store feature claims atomically. Separate availability, packaging, integration depth, audience, release date, and source confidence.",
+    related: ["Battlecards", "Feature matrix", "Messaging shifts", "M&A"],
   },
 ];
 
-const coverage = [
-  { name: "OSHA Inspections", records: "3.2M+", status: "Ready", freshness: "Daily", score: 96 },
-  { name: "EPA ECHO", records: "Facilities", status: "Ready", freshness: "Weekly", score: 92 },
-  { name: "State Agencies", records: "31 / 50", status: "Mapping", freshness: "Varies", score: 62 },
-  { name: "Federal Register", records: "Rules", status: "Ready", freshness: "Daily", score: 98 },
+const sources = [
+  { name: "OSHA Data", owner: "U.S. Department of Labor", method: "Download + search", cadence: "Daily / periodic", coverage: "Federal + State Plans", status: "Mapped", type: "Enforcement" },
+  { name: "EPA ECHO", owner: "U.S. EPA", method: "Public web services", cadence: "Source dependent", coverage: "National + state programs", status: "Ready", type: "Environmental" },
+  { name: "Federal Register", owner: "GPO / NARA", method: "Public API", cadence: "Daily", coverage: "Federal rulemaking", status: "Ready", type: "Regulatory" },
+  { name: "eCFR", owner: "GPO / OFR", method: "Public API", cadence: "Daily", coverage: "Current federal regulations", status: "Ready", type: "Regulatory" },
+  { name: "BLS QCEW", owner: "Bureau of Labor Statistics", method: "Open data", cadence: "Quarterly", coverage: "NAICS + geography", status: "Ready", type: "Market" },
+  { name: "Census Business Data", owner: "U.S. Census Bureau", method: "Public API", cadence: "Annual / periodic", coverage: "Business + industry", status: "Mapped", type: "Market" },
+  { name: "State Agency Matrix", owner: "Multiple jurisdictions", method: "API / feed / scan", cadence: "Varies", coverage: "50 states + territories", status: "In progress", type: "Regulatory" },
 ];
 
-const industries = [
-  { name: "Construction", value: 88, movement: "+6.8%", icon: HardHat },
-  { name: "Manufacturing", value: 82, movement: "+3.2%", icon: Factory },
-  { name: "Energy & Utilities", value: 79, movement: "+5.1%", icon: Activity },
-  { name: "Waste & Water", value: 71, movement: "+2.4%", icon: Globe2 },
-];
+const reliabilityClass: Record<Reliability, string> = {
+  "Verified Fact": "verified",
+  "Company Statement": "statement",
+  "Analyst Inference": "inference",
+  "Source Structure": "structure",
+};
 
 function ProductMark() {
-  return (
-    <div className="product-mark" aria-label="Novara Intelligence">
-      <span className="mark-glyph"><i /><i /><i /></span>
-      <span className="mark-copy"><strong>NOVARA</strong><small>INTELLIGENCE</small></span>
-    </div>
-  );
+  return <div className="product-mark" aria-label="Novara Intelligence"><span className="mark-glyph"><i /><i /><i /></span><span className="mark-copy"><strong>NOVARA</strong><small>INTELLIGENCE</small></span></div>;
+}
+
+function ReliabilityBadge({ value }: { value: Reliability }) {
+  return <span className={`reliability ${reliabilityClass[value]}`}><ShieldCheck size={12} />{value}</span>;
 }
 
 export default function Home() {
-  const [active, setActive] = useState("Signal Room");
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [active, setActive] = useState("Navigator");
+  const [selectedId, setSelectedId] = useState(records[0].id);
   const [query, setQuery] = useState("");
-  const [windowLabel, setWindowLabel] = useState("Last 90 days");
+  const [industry, setIndustry] = useState("All industries");
+  const [reliability, setReliability] = useState("All reliability");
+  const [menuOpen, setMenuOpen] = useState(false);
 
-  const visibleSignals = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
-    if (!normalized) return signals;
-    return signals.filter((signal) => `${signal.type} ${signal.title} ${signal.detail}`.toLowerCase().includes(normalized));
-  }, [query]);
+  const filtered = useMemo(() => {
+    const text = query.toLowerCase().trim();
+    return records.filter((record) => {
+      const domainMatch = ["Navigator", "Sources"].includes(active) || record.domain === active;
+      const industryMatch = industry === "All industries" || record.industries.includes(industry);
+      const reliabilityMatch = reliability === "All reliability" || record.reliability === reliability;
+      const haystack = [record.title, record.summary, record.domain, ...record.industries, ...record.geographies, ...record.agencies, ...record.entities].join(" ").toLowerCase();
+      return domainMatch && industryMatch && reliabilityMatch && (!text || haystack.includes(text));
+    });
+  }, [active, industry, query, reliability]);
 
-  const selectView = (label: string) => {
+  const selected = records.find((record) => record.id === selectedId) ?? filtered[0] ?? records[0];
+
+  const selectNavigation = (label: string) => {
     setActive(label);
     setMenuOpen(false);
+    if (label !== "Sources") {
+      const first = records.find((record) => label === "Navigator" || record.domain === label);
+      if (first) setSelectedId(first.id);
+    }
+  };
+
+  const exportRecord = () => {
+    const payload = JSON.stringify({ exportedAt: new Date().toISOString(), record: selected }, null, 2);
+    const url = URL.createObjectURL(new Blob([payload], { type: "application/json" }));
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `${selected.id}.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
     <main className="app-shell">
       <aside className={menuOpen ? "sidebar open" : "sidebar"}>
-        <div className="sidebar-top">
-          <ProductMark />
-          <button className="mobile-close" onClick={() => setMenuOpen(false)} aria-label="Close navigation"><X size={19} /></button>
-        </div>
+        <div className="sidebar-top"><ProductMark /><button className="mobile-close" onClick={() => setMenuOpen(false)} aria-label="Close navigation"><X size={19} /></button></div>
         <nav className="primary-nav" aria-label="Primary">
-          {navigation.map(({ label, icon: Icon }) => (
-            <button key={label} className={active === label ? "nav-item active" : "nav-item"} onClick={() => selectView(label)}>
-              <Icon size={18} strokeWidth={1.8} /><span>{label}</span>
-              {label === "Sources" && <span className="nav-count">8</span>}
-            </button>
-          ))}
+          {navigation.map(({ label, icon: Icon }) => <button key={label} className={active === label ? "nav-item active" : "nav-item"} onClick={() => selectNavigation(label)}><Icon size={18} strokeWidth={1.8} /><span>{label}</span>{label === "Sources" && <span className="nav-count">7</span>}</button>)}
         </nav>
-        <div className="sidebar-brief">
-          <span className="eyebrow inverse"><Sparkles size={13} /> WEEKLY BRIEF</span>
-          <p>7 priority signals ready for leadership review.</p>
-          <button>Open briefing <ArrowUpRight size={14} /></button>
-        </div>
-        <div className="sidebar-footer">
-          <div className="avatar">VN</div>
-          <div><strong>Vanessa Nelsen</strong><span>Strategy workspace</span></div>
-          <ChevronDown size={15} />
-        </div>
+        <div className="sidebar-brief"><span className="eyebrow inverse"><Sparkles size={13} /> TRUST MODEL</span><p>Every claim retains its source, retrieval date, method, and reliability class.</p><button onClick={() => selectNavigation("Sources")}>Review source policy <ArrowRight size={14} /></button></div>
+        <div className="sidebar-footer"><div className="avatar">VN</div><div><strong>Vanessa Nelsen</strong><span>Strategy workspace</span></div><ChevronDown size={15} /></div>
       </aside>
 
       <section className="workspace">
         <header className="topbar">
           <button className="mobile-menu" onClick={() => setMenuOpen(true)} aria-label="Open navigation"><Menu size={21} /></button>
-          <div className="search-wrap"><Search size={17} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search markets, companies, regulations, or signals" /><kbd>⌘ K</kbd></div>
-          <div className="topbar-actions">
-            <span className="system-pill"><span /> Sources healthy</span>
-            <button className="icon-button" aria-label="Notifications"><Bell size={18} /><i /></button>
-            <button className="export-button"><Download size={16} /> Export brief</button>
-          </div>
+          <div className="search-wrap"><Search size={17} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search claims, agencies, companies, NAICS, or geography" /><kbd>⌘ K</kbd></div>
+          <div className="topbar-actions"><span className="system-pill"><span /> Source policy active</span><button className="export-button" onClick={exportRecord}><Download size={16} /> Export record</button></div>
         </header>
 
-        <div className="content">
-          <div className="demo-banner"><CircleDot size={14} /> Push One preview — demonstration signals only; no Ocean content, customer data, or private source records are included.</div>
-          <section className="hero-row">
-            <div>
-              <span className="eyebrow"><Radar size={14} /> EXECUTIVE SIGNAL ROOM</span>
-              <h1>{active}</h1>
-              <p>A decision layer connecting market movement, enforcement pressure, regulatory change, and competitive strategy.</p>
-            </div>
-            <div className="view-controls">
-              <button>North America <ChevronDown size={14} /></button>
-              <button onClick={() => setWindowLabel(windowLabel === "Last 90 days" ? "Last 12 months" : "Last 90 days")}>{windowLabel} <ChevronDown size={14} /></button>
-            </div>
+        <div className="content intelligence-content">
+          <div className="demo-banner"><CircleDot size={14} /> Architecture preview — source structures and selected public records only. No Ocean data or uploaded private records are included.</div>
+          <section className="workspace-heading">
+            <div><span className="eyebrow"><FileSearch size={14} /> INTELLIGENCE WORKSPACE</span><h1>{active}</h1><p>{active === "Sources" ? "Inspect coverage, ownership, update method, and source health before trusting an output." : "Navigate evidence as connected records—not disconnected dashboard tiles."}</p></div>
+            <div className="workspace-meta"><span><b>{active === "Sources" ? sources.length : filtered.length}</b> records in view</span><button><RefreshCw size={14} /> Last structured today</button></div>
           </section>
 
-          <section className="metric-grid" aria-label="Key metrics">
-            <article className="metric-card lead">
-              <div className="metric-icon"><Radar size={20} /></div><span>Priority signals</span><strong>24</strong><small><b>+7</b> since last review</small>
-            </article>
-            <article className="metric-card">
-              <div className="metric-icon violet"><ShieldCheck size={20} /></div><span>Compliance changes</span><strong>16</strong><small>Across 9 jurisdictions</small>
-            </article>
-            <article className="metric-card">
-              <div className="metric-icon coral"><Building2 size={20} /></div><span>Competitor moves</span><strong>11</strong><small>3 require review</small>
-            </article>
-            <article className="metric-card">
-              <div className="metric-icon amber"><TriangleAlert size={20} /></div><span>Coverage gaps</span><strong>19</strong><small>State sources to map</small>
-            </article>
-          </section>
-
-          <section className="main-grid">
-            <article className="panel signals-panel">
-              <div className="panel-heading">
-                <div><span className="panel-kicker">What changed</span><h2>Priority intelligence</h2></div>
-                <button>View all signals <ArrowUpRight size={14} /></button>
+          {active === "Sources" ? (
+            <section className="source-catalog panel">
+              <div className="catalog-intro"><div><span className="panel-kicker">System of record</span><h2>Source catalog & coverage</h2></div><p>Connectors will fail quietly into the last successful snapshot, while freshness and coverage gaps remain visible here.</p></div>
+              <div className="catalog-table">
+                <div className="catalog-row catalog-head"><span>Source</span><span>Type</span><span>Method</span><span>Coverage</span><span>Cadence</span><span>Status</span></div>
+                {sources.map((source) => <div className="catalog-row" key={source.name}><span><i><Database size={15} /></i><b>{source.name}</b><small>{source.owner}</small></span><span>{source.type}</span><span>{source.method}</span><span>{source.coverage}</span><span>{source.cadence}</span><span><mark className={source.status === "Ready" ? "ready" : source.status === "Mapped" ? "mapped" : "progress"}>{source.status}</mark></span></div>)}
               </div>
-              <div className="signal-list">
-                {visibleSignals.length ? visibleSignals.map(({ type, title, detail, source, time, confidence, accent, icon: Icon }) => (
-                  <div className="signal" key={title}>
-                    <div className={`signal-icon ${accent}`}><Icon size={19} /></div>
-                    <div className="signal-copy">
-                      <div className="signal-meta"><span>{type}</span><small>{time}</small></div>
-                      <h3>{title}</h3><p>{detail}</p>
-                      <div className="source-line"><ShieldCheck size={13} /> {confidence}<i />{source}</div>
-                    </div>
-                    <button className="round-arrow" aria-label={`Open ${title}`}><ArrowUpRight size={16} /></button>
+              <div className="coverage-policy"><ShieldCheck size={20} /><div><strong>Publication rule</strong><p>No unsourced claim is eligible for an executive brief, market view, competitor profile, or exported battlecard.</p></div><button>View quality rules <ArrowUpRight size={14} /></button></div>
+            </section>
+          ) : (
+            <>
+              <section className="filter-bar">
+                <span><Filter size={14} /> Refine</span>
+                <label>Industry<select value={industry} onChange={(event) => setIndustry(event.target.value)}><option>All industries</option><option>Construction</option><option>Manufacturing</option><option>Energy & Utilities</option></select></label>
+                <label>Reliability<select value={reliability} onChange={(event) => setReliability(event.target.value)}><option>All reliability</option><option>Verified Fact</option><option>Company Statement</option><option>Source Structure</option></select></label>
+                <button onClick={() => { setIndustry("All industries"); setReliability("All reliability"); setQuery(""); }}>Clear filters</button>
+              </section>
+
+              <section className="evidence-layout">
+                <div className="record-browser panel">
+                  <div className="record-header"><span>Intelligence record</span><span>Domain</span><span>Reliability</span><span>Retrieved</span></div>
+                  <div className="record-list">
+                    {filtered.length ? filtered.map((record) => <button className={selected.id === record.id ? "record-row selected" : "record-row"} key={record.id} onClick={() => setSelectedId(record.id)}><span><i className="record-icon"><FileCheck2 size={16} /></i><span><b>{record.title}</b><small>{record.summary}</small></span></span><span>{record.domain}</span><ReliabilityBadge value={record.reliability} /><span>{record.retrieved}<ChevronRight size={14} /></span></button>) : <div className="empty-state"><Search size={24} /><h3>No records match these filters</h3><p>Clear one or more filters to broaden the evidence set.</p></div>}
                   </div>
-                )) : <div className="empty-state"><Search size={25} /><h3>No matching demonstration signals</h3><p>Try a broader market, regulation, or competitor term.</p></div>}
-              </div>
-            </article>
+                </div>
 
-            <article className="panel intensity-panel">
-              <div className="panel-heading"><div><span className="panel-kicker">Opportunity lens</span><h2>Market intensity</h2></div><button aria-label="Open market intensity"><ArrowUpRight size={15} /></button></div>
-              <p className="panel-description">Composite view of growth, compliance pressure, enforcement, and workforce exposure.</p>
-              <div className="industry-list">
-                {industries.map(({ name, value, movement, icon: Icon }) => (
-                  <div className="industry" key={name}>
-                    <div className="industry-label"><span><Icon size={16} />{name}</span><b>{value}</b></div>
-                    <div className="bar"><i style={{ width: `${value}%` }} /></div>
-                    <small><TrendingUp size={12} /> {movement} signal velocity</small>
-                  </div>
-                ))}
-              </div>
-              <div className="legend"><span><i className="high" /> High intensity</span><span><i className="moderate" /> Moderate</span></div>
-            </article>
-          </section>
-
-          <section className="lower-grid">
-            <article className="panel source-panel">
-              <div className="panel-heading">
-                <div><span className="panel-kicker">Source operations</span><h2>Coverage & freshness</h2></div>
-                <button onClick={() => selectView("Sources")}>Open source console <ArrowUpRight size={14} /></button>
-              </div>
-              <div className="source-table">
-                <div className="source-row table-head"><span>Source</span><span>Coverage</span><span>Status</span><span>Freshness</span></div>
-                {coverage.map((source) => (
-                  <div className="source-row" key={source.name}>
-                    <span><i className="source-logo"><Database size={14} /></i><b>{source.name}</b></span>
-                    <span>{source.records}<em><i style={{ width: `${source.score}%` }} /></em></span>
-                    <span><mark className={source.status === "Ready" ? "ready" : "mapping"}>{source.status === "Ready" ? <Check size={11} /> : <Activity size={11} />}{source.status}</mark></span>
-                    <span>{source.freshness}</span>
-                  </div>
-                ))}
-              </div>
-            </article>
-            <article className="panel action-panel">
-              <span className="panel-kicker">Leadership action</span><h2>Briefing queue</h2>
-              <div className="brief-score"><strong>7</strong><span>items ready<br />for review</span></div>
-              <div className="avatar-stack"><i>VN</i><i>CS</i><i>PM</i><span>Strategy, product & marketing</span></div>
-              <button>Prepare executive brief <Sparkles size={15} /></button>
-            </article>
-          </section>
+                <aside className="evidence-drawer panel">
+                  <div className="drawer-top"><div><span className="record-id">{selected.id}</span><ReliabilityBadge value={selected.reliability} /></div><button onClick={exportRecord} aria-label="Download selected record"><Download size={16} /></button></div>
+                  <h2>{selected.title}</h2><p className="drawer-summary">{selected.summary}</p>
+                  <div className="drawer-section"><span className="section-label">Primary source</span><a href={selected.sourceUrl} target="_blank" rel="noreferrer"><i><ExternalLink size={15} /></i><span><strong>{selected.sourceName}</strong><small>{selected.sourceType}</small></span><ArrowUpRight size={14} /></a><dl><div><dt>Published</dt><dd>{selected.published}</dd></div><div><dt>Retrieved</dt><dd>{selected.retrieved}</dd></div></dl></div>
+                  <div className="drawer-section"><span className="section-label">Evidence</span><p>{selected.evidence}</p></div>
+                  <div className="drawer-section"><span className="section-label">Method & caveat</span><p>{selected.methodology}</p></div>
+                  <div className="drawer-section"><span className="section-label">Connected dimensions</span><div className="dimension-group"><b>Industries</b><div>{selected.industries.map((item) => <span key={item}>{item}</span>)}</div></div><div className="dimension-group"><b>Geography</b><div>{selected.geographies.map((item) => <span key={item}>{item}</span>)}</div></div>{selected.agencies.length > 0 && <div className="dimension-group"><b>Agencies</b><div>{selected.agencies.map((item) => <span key={item}>{item}</span>)}</div></div>}</div>
+                  <div className="drawer-section related-section"><span className="section-label">Related intelligence</span>{selected.related.map((item) => <button key={item}>{item}<ArrowRight size={13} /></button>)}</div>
+                </aside>
+              </section>
+            </>
+          )}
         </div>
       </section>
     </main>
