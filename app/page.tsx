@@ -322,7 +322,7 @@ export default function Home() {
     });
   }, [active, allRecords, focusMode, industry, query, reliability, selectedCompetitor, selectedVertical]);
 
-  const selected = allRecords.find((record) => record.id === selectedId) ?? filtered[0] ?? allRecords[0];
+  const selected = filtered.find((record) => record.id === selectedId) ?? filtered[0] ?? allRecords[0];
 
   const selectNavigation = (label: string) => {
     setActive(label);
@@ -397,7 +397,7 @@ export default function Home() {
         <div className="content intelligence-content">
           <div className="demo-banner"><CircleDot size={14} /> Architecture preview — source structures and selected public records only. No Ocean data or uploaded private records are included.</div>
           {active !== "Sources" && <section className={`focus-context ${focusMode}`}>
-            <div className="focus-mode"><span><PanelsTopLeft size={14} /> Current focus</span><button className={focusMode === "market" ? "active" : ""} onClick={() => setFocusMode("market")}>Market</button><button className={focusMode === "competitor" ? "active" : ""} onClick={() => { setFocusMode("competitor"); setActive("Competitors"); }}>Competitor</button></div>
+            <div className="focus-mode"><span><PanelsTopLeft size={14} /> Current focus</span><button className={focusMode === "market" ? "active" : ""} onClick={() => setFocusMode("market")}>Market</button><button className={focusMode === "competitor" ? "active" : ""} onClick={() => openCompetitor(selectedCompetitorId)}>Competitor</button></div>
             {focusMode === "competitor" && <label>Competitor<select value={selectedCompetitorId} onChange={(event) => openCompetitor(event.target.value)}>{competitors.map((competitor) => <option value={competitor.id} key={competitor.id}>{competitor.name}</option>)}</select></label>}
             <label>Market<select value={selectedVertical} onChange={(event) => { setSelectedVertical(event.target.value); setSelectedSegment("All segments"); }}><option>All markets</option>{(focusMode === "competitor" ? verticals.filter((vertical) => selectedCompetitor.marketRelevance.includes(vertical)) : verticals).map((vertical) => <option key={vertical}>{vertical}</option>)}</select></label>
             <label>Segment<select value={selectedSegment} onChange={(event) => setSelectedSegment(event.target.value)}><option value="All segments">All segments</option>{marketSegments.filter((segment) => selectedVertical === "All markets" || segment.vertical === selectedVertical).map((segment) => <option value={segment.id} key={segment.id}>{segment.segment}</option>)}</select></label>
