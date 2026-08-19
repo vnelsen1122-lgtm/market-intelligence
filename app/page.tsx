@@ -21,6 +21,7 @@ import {
   Leaf,
   Menu,
   Network,
+  PanelsTopLeft,
   Radar,
   RefreshCw,
   Search,
@@ -29,6 +30,7 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { marketSegments, verticals } from "./market-data";
 
 type Reliability = "Verified Fact" | "Company Statement" | "Analyst Inference" | "Source Structure";
 
@@ -227,6 +229,9 @@ export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [liveRecords, setLiveRecords] = useState<IntelligenceRecord[]>([]);
   const [feedStatus, setFeedStatus] = useState<"loading" | "live" | "degraded">("loading");
+  const [selectedVertical, setSelectedVertical] = useState("All markets");
+  const [selectedSegment, setSelectedSegment] = useState("All segments");
+  const [selectedGeography, setSelectedGeography] = useState("North America");
 
   useEffect(() => {
     let activeRequest = true;
@@ -262,17 +267,23 @@ export default function Home() {
   }, []);
 
   const allRecords = useMemo(() => [...liveRecords, ...records], [liveRecords]);
+  const focusedSegments = useMemo(() => marketSegments.filter((segment) => {
+    const verticalMatch = selectedVertical === "All markets" || segment.vertical === selectedVertical;
+    const segmentMatch = selectedSegment === "All segments" || segment.id === selectedSegment;
+    return verticalMatch && segmentMatch;
+  }), [selectedSegment, selectedVertical]);
 
   const filtered = useMemo(() => {
     const text = query.toLowerCase().trim();
     return allRecords.filter((record) => {
       const domainMatch = ["Navigator", "Sources"].includes(active) || record.domain === active;
-      const industryMatch = industry === "All industries" || record.industries.includes(industry);
+      const crossSectionMarket = selectedVertical === "All markets" || record.industries.includes(selectedVertical) || record.industries.includes("All priority industries") || record.industries.includes("Requires applicability review");
+      const industryMatch = (industry === "All industries" || record.industries.includes(industry)) && crossSectionMarket;
       const reliabilityMatch = reliability === "All reliability" || record.reliability === reliability;
       const haystack = [record.title, record.summary, record.domain, ...record.industries, ...record.geographies, ...record.agencies, ...record.entities].join(" ").toLowerCase();
       return domainMatch && industryMatch && reliabilityMatch && (!text || haystack.includes(text));
     });
-  }, [active, allRecords, industry, query, reliability]);
+  }, [active, allRecords, industry, query, reliability, selectedVertical]);
 
   const selected = allRecords.find((record) => record.id === selectedId) ?? filtered[0] ?? allRecords[0];
 
@@ -283,6 +294,14 @@ export default function Home() {
       const first = allRecords.find((record) => label === "Navigator" || record.domain === label);
       if (first) setSelectedId(first.id);
     }
+  };
+
+  const openMarket = (vertical: string, segmentId?: string) => {
+    setSelectedVertical(vertical);
+    setSelectedSegment(segmentId ?? "All segments");
+    setActive("Industries");
+    const relatedRecord = allRecords.find((record) => record.domain === "Industries" || record.industries.includes(vertical));
+    if (relatedRecord) setSelectedId(relatedRecord.id);
   };
 
   const exportRecord = () => {
@@ -325,6 +344,13 @@ export default function Home() {
 
         <div className="content intelligence-content">
           <div className="demo-banner"><CircleDot size={14} /> Architecture preview — source structures and selected public records only. No Ocean data or uploaded private records are included.</div>
+          {active !== "Sources" && <section className="focus-context">
+            <div className="focus-mode"><span><PanelsTopLeft size={14} /> Current focus</span><button className="active">Market</button><button onClick={() => setActive("Competitors")}>Competitor</button></div>
+            <label>Market<select value={selectedVertical} onChange={(event) => { setSelectedVertical(event.target.value); setSelectedSegment("All segments"); }}><option>All markets</option>{verticals.map((vertical) => <option key={vertical}>{vertical}</option>)}</select></label>
+            <label>Segment<select value={selectedSegment} onChange={(event) => setSelectedSegment(event.target.value)}><option value="All segments">All segments</option>{marketSegments.filter((segment) => selectedVertical === "All markets" || segment.vertical === selectedVertical).map((segment) => <option value={segment.id} key={segment.id}>{segment.segment}</option>)}</select></label>
+            <label>Geography<select value={selectedGeography} onChange={(event) => setSelectedGeography(event.target.value)}><option>North America</option><option>United States</option><option>State</option><option>Metro</option><option>Facility / project</option></select></label>
+            <div className="focus-path"><small>Cross-section</small><b>{selectedVertical}{selectedSegment !== "All segments" ? ` / ${marketSegments.find((segment) => segment.id === selectedSegment)?.segment}` : ""}</b><span>{selectedGeography}</span></div>
+          </section>}
           <section className="workspace-heading">
             <div><span className="eyebrow"><FileSearch size={14} /> INTELLIGENCE WORKSPACE</span><h1>{active}</h1><p>{active === "Sources" ? "Inspect coverage, ownership, update method, and source health before trusting an output." : "Navigate evidence as connected records—not disconnected dashboard tiles."}</p></div>
             <div className="workspace-meta"><span><b>{active === "Sources" ? sources.length : filtered.length}</b> records in view</span><button><RefreshCw size={14} /> Last structured today</button></div>
@@ -341,6 +367,19 @@ export default function Home() {
             </section>
           ) : (
             <>
+              {["Navigator", "Industries"].includes(active) && <section className="market-navigator">
+                <div className="market-entry-grid">
+                  {verticals.map((vertical) => {
+                    const segments = marketSegments.filter((segment) => segment.vertical === vertical);
+                    const agencies = new Set(segments.flatMap((segment) => segment.agencies));
+                    return <button key={vertical} className={selectedVertical === vertical ? "market-entry selected" : "market-entry"} onClick={() => openMarket(vertical)}><span><i><Factory size={17} /></i><small>{segments.length} mapped segments</small></span><h2>{vertical}</h2><p>{segments.slice(0, 3).map((segment) => segment.segment).join(" · ")}</p><footer><span>{agencies.size} agency families</span><ChevronRight size={15} /></footer></button>;
+                  })}
+                </div>
+                <div className="segment-explorer panel">
+                  <div className="segment-heading"><div><span className="panel-kicker">Market hierarchy</span><h2>{selectedVertical === "All markets" ? "Priority EHS segments" : selectedVertical}</h2></div><p>Open a segment to carry its NAICS, geography, workforce, agency, obligation, exposure, and module context across the application.</p></div>
+                  <div className="segment-table"><div className="segment-row segment-head"><span>Segment</span><span>NAICS</span><span>Workforce</span><span>Agency coverage</span><span>Novara modules</span></div>{focusedSegments.map((segment) => <button className={selectedSegment === segment.id ? "segment-row selected" : "segment-row"} key={segment.id} onClick={() => openMarket(segment.vertical, segment.id)}><span><b>{segment.segment}</b><small>{segment.vertical}</small></span><span>{segment.naics.join(", ")}</span><span>{segment.workforce.slice(0, 2).join(" · ")}</span><span>{segment.agencies.slice(0, 2).join(" · ")}</span><span>{segment.novaraModules.slice(0, 2).join(" · ")}<ChevronRight size={13} /></span></button>)}</div>
+                </div>
+              </section>}
               {active === "Competitors" && <section className="battlecard-bar"><div><span className="panel-kicker">Evidence-gated output</span><h2>Battlecard assembly</h2><p>Exports carry source, date, reliability, and caveats. Unsupported feature claims remain blocked.</p></div><div className="gate-list"><span><Check size={12} /> Source attached</span><span><Check size={12} /> Reliability labeled</span><span className="pending">Packaging review required</span></div><button onClick={exportBattlecard}><Download size={14} /> Export draft battlecard</button></section>}
               {active === "Regulations" && <section className={`feed-bar ${feedStatus}`}><div><RefreshCw size={15} /><span><b>Federal Register connector</b><small>{feedStatus === "live" ? `${liveRecords.length} live OSHA documents normalized with primary-source links` : feedStatus === "degraded" ? "Live feed unavailable; trusted static records remain available without an error screen" : "Checking the official public feed"}</small></span></div><mark>{feedStatus}</mark></section>}
               <section className="filter-bar">
