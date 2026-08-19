@@ -5,6 +5,7 @@ import {
   ArrowUpRight,
   BookOpenCheck,
   Building2,
+  Calculator,
   Check,
   ChevronDown,
   ChevronRight,
@@ -18,6 +19,7 @@ import {
   Filter,
   Globe2,
   HardHat,
+  Info,
   Leaf,
   Menu,
   Network,
@@ -272,6 +274,33 @@ export default function Home() {
     const segmentMatch = selectedSegment === "All segments" || segment.id === selectedSegment;
     return verticalMatch && segmentMatch;
   }), [selectedSegment, selectedVertical]);
+  const activeSegment = useMemo(() => marketSegments.find((segment) => segment.id === selectedSegment), [selectedSegment]);
+  const intensity = useMemo(() => {
+    if (!activeSegment) return null;
+    const environmentTerms = ["environment", "air", "water", "waste", "permit", "emissions", "discharge"];
+    const contractorTerms = ["contractor", "subcontractor", "temporary", "service"];
+    const regulatoryValue = Math.min(100, activeSegment.agencies.length * 14 + activeSegment.obligations.length * 10);
+    const environmentalMatches = activeSegment.obligations.filter((item) => environmentTerms.some((term) => item.toLowerCase().includes(term))).length;
+    const environmentalValue = Math.min(100, environmentalMatches * 28 + (activeSegment.agencies.some((agency) => agency.includes("EPA") || agency.toLowerCase().includes("environment")) ? 24 : 0));
+    const contractorMatches = activeSegment.workforce.filter((item) => contractorTerms.some((term) => item.toLowerCase().includes(term))).length;
+    const contractorValue = Math.min(100, contractorMatches * 35 + (activeSegment.operationalExposure.some((item) => item.toLowerCase().includes("contractor")) ? 30 : 0));
+    const operationalValue = Math.min(100, activeSegment.operationalExposure.length * 20);
+    const measuredWeight = 60;
+    const measuredPoints = regulatoryValue * .25 + environmentalValue * .15 + contractorValue * .10 + operationalValue * .10;
+    const structuralSignal = Math.round(measuredPoints / measuredWeight * 100);
+    return {
+      structuralSignal,
+      evidenceCoverage: measuredWeight,
+      factors: [
+        { label: "Regulatory breadth", weight: 25, value: regulatoryValue, status: "Mapped structure", evidence: `${activeSegment.agencies.length} agency families and ${activeSegment.obligations.length} obligation groups mapped` },
+        { label: "Enforcement pressure", weight: 20, value: null, status: "Data required", evidence: "Requires normalized inspection, citation, penalty, repeat-visit, and establishment denominators" },
+        { label: "Injury exposure", weight: 20, value: null, status: "Data required", evidence: "Requires injury, severe-injury, fatality, hours-worked, and occupation denominators" },
+        { label: "Environmental obligations", weight: 15, value: environmentalValue, status: "Mapped structure", evidence: `${environmentalMatches} environmental obligation signals plus agency coverage` },
+        { label: "Contractor complexity", weight: 10, value: contractorValue, status: "Mapped structure", evidence: `${contractorMatches} contractor-dependent workforce groups identified` },
+        { label: "Operational complexity", weight: 10, value: operationalValue, status: "Mapped structure", evidence: `${activeSegment.operationalExposure.length} operating exposure groups identified` },
+      ],
+    };
+  }, [activeSegment]);
 
   const filtered = useMemo(() => {
     const text = query.toLowerCase().trim();
@@ -379,6 +408,12 @@ export default function Home() {
                   <div className="segment-heading"><div><span className="panel-kicker">Market hierarchy</span><h2>{selectedVertical === "All markets" ? "Priority EHS segments" : selectedVertical}</h2></div><p>Open a segment to carry its NAICS, geography, workforce, agency, obligation, exposure, and module context across the application.</p></div>
                   <div className="segment-table"><div className="segment-row segment-head"><span>Segment</span><span>NAICS</span><span>Workforce</span><span>Agency coverage</span><span>Novara modules</span></div>{focusedSegments.map((segment) => <button className={selectedSegment === segment.id ? "segment-row selected" : "segment-row"} key={segment.id} onClick={() => openMarket(segment.vertical, segment.id)}><span><b>{segment.segment}</b><small>{segment.vertical}</small></span><span>{segment.naics.join(", ")}</span><span>{segment.workforce.slice(0, 2).join(" · ")}</span><span>{segment.agencies.slice(0, 2).join(" · ")}</span><span>{segment.novaraModules.slice(0, 2).join(" · ")}<ChevronRight size={13} /></span></button>)}</div>
                 </div>
+                {activeSegment && intensity && <div className="intensity-workbench panel">
+                  <div className="intensity-summary"><div><span className="panel-kicker">Explainable compliance intensity</span><h2>{activeSegment.segment}</h2><p>This is a structural signal, not a market ranking. Missing enforcement and injury evidence is excluded and shown explicitly.</p></div><div className="intensity-score"><small>Structural signal</small><strong>{intensity.structuralSignal}</strong><span>/ 100</span><mark>{intensity.evidenceCoverage}% evidence coverage</mark></div></div>
+                  <div className="formula-note"><Calculator size={16} /><div><b>Current calculation</b><span>Regulatory breadth 25% + environmental obligations 15% + contractor complexity 10% + operational complexity 10%. Enforcement pressure 20% and injury exposure 20% remain unscored until source-backed denominators are available.</span></div></div>
+                  <div className="factor-grid">{intensity.factors.map((factor) => <article className={factor.value === null ? "factor-card pending" : "factor-card"} key={factor.label}><header><span>{factor.label}<small>{factor.weight}% weight</small></span>{factor.value === null ? <mark>Not scored</mark> : <strong>{factor.value}</strong>}</header>{factor.value !== null && <div className="factor-bar"><i style={{ width: `${factor.value}%` }} /></div>}<p>{factor.evidence}</p><footer>{factor.value === null ? <Info size={12} /> : <Check size={12} />}{factor.status}</footer></article>)}</div>
+                  <div className="intensity-policy"><ShieldCheck size={17} /><span><b>Trust rule</b> A full compliance-intensity score cannot publish until required sources, denominators, periods, and geography coverage are recorded for every weighted factor.</span></div>
+                </div>}
               </section>}
               {active === "Competitors" && <section className="battlecard-bar"><div><span className="panel-kicker">Evidence-gated output</span><h2>Battlecard assembly</h2><p>Exports carry source, date, reliability, and caveats. Unsupported feature claims remain blocked.</p></div><div className="gate-list"><span><Check size={12} /> Source attached</span><span><Check size={12} /> Reliability labeled</span><span className="pending">Packaging review required</span></div><button onClick={exportBattlecard}><Download size={14} /> Export draft battlecard</button></section>}
               {active === "Regulations" && <section className={`feed-bar ${feedStatus}`}><div><RefreshCw size={15} /><span><b>Federal Register connector</b><small>{feedStatus === "live" ? `${liveRecords.length} live OSHA documents normalized with primary-source links` : feedStatus === "degraded" ? "Live feed unavailable; trusted static records remain available without an error screen" : "Checking the official public feed"}</small></span></div><mark>{feedStatus}</mark></section>}
