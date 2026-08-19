@@ -32,6 +32,7 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { competitors } from "./competitor-data";
 import { marketSegments, verticals } from "./market-data";
 
 type Reliability = "Verified Fact" | "Company Statement" | "Analyst Inference" | "Source Structure";
@@ -68,6 +69,8 @@ type FeedResponse = {
     agencies: string[];
   }>;
 };
+
+type FocusMode = "market" | "competitor";
 
 const navigation = [
   { label: "Navigator", icon: Radar },
@@ -234,6 +237,8 @@ export default function Home() {
   const [selectedVertical, setSelectedVertical] = useState("All markets");
   const [selectedSegment, setSelectedSegment] = useState("All segments");
   const [selectedGeography, setSelectedGeography] = useState("North America");
+  const [focusMode, setFocusMode] = useState<FocusMode>("market");
+  const [selectedCompetitorId, setSelectedCompetitorId] = useState(competitors[0].id);
 
   useEffect(() => {
     let activeRequest = true;
@@ -269,6 +274,7 @@ export default function Home() {
   }, []);
 
   const allRecords = useMemo(() => [...liveRecords, ...records], [liveRecords]);
+  const selectedCompetitor = useMemo(() => competitors.find((competitor) => competitor.id === selectedCompetitorId) ?? competitors[0], [selectedCompetitorId]);
   const focusedSegments = useMemo(() => marketSegments.filter((segment) => {
     const verticalMatch = selectedVertical === "All markets" || segment.vertical === selectedVertical;
     const segmentMatch = selectedSegment === "All segments" || segment.id === selectedSegment;
@@ -306,18 +312,21 @@ export default function Home() {
     const text = query.toLowerCase().trim();
     return allRecords.filter((record) => {
       const domainMatch = ["Navigator", "Sources"].includes(active) || record.domain === active;
-      const crossSectionMarket = selectedVertical === "All markets" || record.industries.includes(selectedVertical) || record.industries.includes("All priority industries") || record.industries.includes("Requires applicability review");
+      const competitorMarkets = focusMode === "competitor" ? selectedCompetitor.marketRelevance : verticals;
+      const focusVertical = selectedVertical === "All markets" ? competitorMarkets : [selectedVertical];
+      const crossSectionMarket = focusVertical.some((vertical) => record.industries.includes(vertical)) || record.industries.includes("All priority industries") || record.industries.includes("Requires applicability review") || record.domain === "Competitors";
       const industryMatch = (industry === "All industries" || record.industries.includes(industry)) && crossSectionMarket;
       const reliabilityMatch = reliability === "All reliability" || record.reliability === reliability;
       const haystack = [record.title, record.summary, record.domain, ...record.industries, ...record.geographies, ...record.agencies, ...record.entities].join(" ").toLowerCase();
       return domainMatch && industryMatch && reliabilityMatch && (!text || haystack.includes(text));
     });
-  }, [active, allRecords, industry, query, reliability, selectedVertical]);
+  }, [active, allRecords, focusMode, industry, query, reliability, selectedCompetitor, selectedVertical]);
 
   const selected = allRecords.find((record) => record.id === selectedId) ?? filtered[0] ?? allRecords[0];
 
   const selectNavigation = (label: string) => {
     setActive(label);
+    if (label === "Competitors") setFocusMode("competitor");
     setMenuOpen(false);
     if (label !== "Sources") {
       const first = allRecords.find((record) => label === "Navigator" || record.domain === label);
@@ -326,11 +335,25 @@ export default function Home() {
   };
 
   const openMarket = (vertical: string, segmentId?: string) => {
+    setFocusMode("market");
     setSelectedVertical(vertical);
     setSelectedSegment(segmentId ?? "All segments");
     setActive("Industries");
     const relatedRecord = allRecords.find((record) => record.domain === "Industries" || record.industries.includes(vertical));
     if (relatedRecord) setSelectedId(relatedRecord.id);
+  };
+
+  const openCompetitor = (competitorId: string) => {
+    const competitor = competitors.find((item) => item.id === competitorId) ?? competitors[0];
+    setFocusMode("competitor");
+    setSelectedCompetitorId(competitorId);
+    if (selectedVertical !== "All markets" && !competitor.marketRelevance.includes(selectedVertical)) {
+      setSelectedVertical("All markets");
+      setSelectedSegment("All segments");
+    }
+    setActive("Competitors");
+    const competitorRecord = allRecords.find((record) => record.domain === "Competitors");
+    if (competitorRecord) setSelectedId(competitorRecord.id);
   };
 
   const exportRecord = () => {
@@ -344,11 +367,11 @@ export default function Home() {
   };
 
   const exportBattlecard = () => {
-    const markdown = `# Evidence-Backed Battlecard\n\n**Status:** Draft — source review required\n**Exported:** ${new Date().toISOString()}\n\n## Intelligence record\n${selected.title}\n\n## What the evidence supports\n${selected.evidence}\n\n## Source\n- ${selected.sourceName}: ${selected.sourceUrl}\n- Reliability: ${selected.reliability}\n- Published: ${selected.published}\n- Retrieved: ${selected.retrieved}\n\n## Method and caveat\n${selected.methodology}\n\n## Connected topics\n${selected.related.map((item) => `- ${item}`).join("\n")}\n\n## Required before sales use\n- Verify competitor identity and current packaging\n- Source each feature and functionality claim\n- Separate marketed capability from demonstrated capability\n- Add approved Novara positioning and objection handling\n`;
+    const markdown = `# ${selectedCompetitor.name} Evidence-Backed Battlecard\n\n**Status:** Draft — source review required\n**Evidence class:** ${selectedCompetitor.reliability}\n**Exported:** ${new Date().toISOString()}\n\n## Company-stated positioning\n${selectedCompetitor.statedPositioning}\n\n## Company-stated platform\n${selectedCompetitor.platform}\n\n## Company-stated modules\n${selectedCompetitor.modules.map((item) => `- ${item}`).join("\n")}\n\n## Official source\n- ${selectedCompetitor.officialUrl}\n- Retrieved: ${selectedCompetitor.retrieved}\n\n## Market intersections for review\n${selectedCompetitor.marketRelevance.map((item) => `- ${item}`).join("\n")}\n\n## Evidence gaps before sales use\n- Confirm current packaging, editions, and availability\n- Add source-level evidence for feature depth and workflows\n- Add customer evidence and approved analyst research\n- Add dated Novara comparison and approved objection handling\n- Review every claim with product and competitive-intelligence owners\n`;
     const url = URL.createObjectURL(new Blob([markdown], { type: "text/markdown" }));
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = "evidence-backed-battlecard.md";
+    anchor.download = `${selectedCompetitor.id}-evidence-backed-battlecard.md`;
     anchor.click();
     URL.revokeObjectURL(url);
   };
@@ -373,12 +396,13 @@ export default function Home() {
 
         <div className="content intelligence-content">
           <div className="demo-banner"><CircleDot size={14} /> Architecture preview — source structures and selected public records only. No Ocean data or uploaded private records are included.</div>
-          {active !== "Sources" && <section className="focus-context">
-            <div className="focus-mode"><span><PanelsTopLeft size={14} /> Current focus</span><button className="active">Market</button><button onClick={() => setActive("Competitors")}>Competitor</button></div>
-            <label>Market<select value={selectedVertical} onChange={(event) => { setSelectedVertical(event.target.value); setSelectedSegment("All segments"); }}><option>All markets</option>{verticals.map((vertical) => <option key={vertical}>{vertical}</option>)}</select></label>
+          {active !== "Sources" && <section className={`focus-context ${focusMode}`}>
+            <div className="focus-mode"><span><PanelsTopLeft size={14} /> Current focus</span><button className={focusMode === "market" ? "active" : ""} onClick={() => setFocusMode("market")}>Market</button><button className={focusMode === "competitor" ? "active" : ""} onClick={() => { setFocusMode("competitor"); setActive("Competitors"); }}>Competitor</button></div>
+            {focusMode === "competitor" && <label>Competitor<select value={selectedCompetitorId} onChange={(event) => openCompetitor(event.target.value)}>{competitors.map((competitor) => <option value={competitor.id} key={competitor.id}>{competitor.name}</option>)}</select></label>}
+            <label>Market<select value={selectedVertical} onChange={(event) => { setSelectedVertical(event.target.value); setSelectedSegment("All segments"); }}><option>All markets</option>{(focusMode === "competitor" ? verticals.filter((vertical) => selectedCompetitor.marketRelevance.includes(vertical)) : verticals).map((vertical) => <option key={vertical}>{vertical}</option>)}</select></label>
             <label>Segment<select value={selectedSegment} onChange={(event) => setSelectedSegment(event.target.value)}><option value="All segments">All segments</option>{marketSegments.filter((segment) => selectedVertical === "All markets" || segment.vertical === selectedVertical).map((segment) => <option value={segment.id} key={segment.id}>{segment.segment}</option>)}</select></label>
             <label>Geography<select value={selectedGeography} onChange={(event) => setSelectedGeography(event.target.value)}><option>North America</option><option>United States</option><option>State</option><option>Metro</option><option>Facility / project</option></select></label>
-            <div className="focus-path"><small>Cross-section</small><b>{selectedVertical}{selectedSegment !== "All segments" ? ` / ${marketSegments.find((segment) => segment.id === selectedSegment)?.segment}` : ""}</b><span>{selectedGeography}</span></div>
+            <div className="focus-path"><small>Persistent cross-section</small><b>{focusMode === "competitor" ? `${selectedCompetitor.name} / ` : ""}{selectedVertical}{selectedSegment !== "All segments" ? ` / ${marketSegments.find((segment) => segment.id === selectedSegment)?.segment}` : ""}</b><span>{selectedGeography} · retained across every workspace</span></div>
           </section>}
           <section className="workspace-heading">
             <div><span className="eyebrow"><FileSearch size={14} /> INTELLIGENCE WORKSPACE</span><h1>{active}</h1><p>{active === "Sources" ? "Inspect coverage, ownership, update method, and source health before trusting an output." : "Navigate evidence as connected records—not disconnected dashboard tiles."}</p></div>
@@ -415,7 +439,20 @@ export default function Home() {
                   <div className="intensity-policy"><ShieldCheck size={17} /><span><b>Trust rule</b> A full compliance-intensity score cannot publish until required sources, denominators, periods, and geography coverage are recorded for every weighted factor.</span></div>
                 </div>}
               </section>}
-              {active === "Competitors" && <section className="battlecard-bar"><div><span className="panel-kicker">Evidence-gated output</span><h2>Battlecard assembly</h2><p>Exports carry source, date, reliability, and caveats. Unsupported feature claims remain blocked.</p></div><div className="gate-list"><span><Check size={12} /> Source attached</span><span><Check size={12} /> Reliability labeled</span><span className="pending">Packaging review required</span></div><button onClick={exportBattlecard}><Download size={14} /> Export draft battlecard</button></section>}
+              {active === "Competitors" && <>
+                <section className="competitor-workspace">
+                  <div className="competitor-entry-grid">
+                    {competitors.map((competitor) => <button className={selectedCompetitor.id === competitor.id ? "competitor-entry selected" : "competitor-entry"} key={competitor.id} onClick={() => openCompetitor(competitor.id)}><span><i><Building2 size={16} /></i><ReliabilityBadge value={competitor.reliability} /></span><h2>{competitor.name}</h2><p>{competitor.platform}</p><footer>{competitor.marketRelevance.length} mapped market intersections<ChevronRight size={14} /></footer></button>)}
+                  </div>
+                  <div className="competitor-dossier panel">
+                    <div className="dossier-summary"><div><span className="panel-kicker">Official-source competitor dossier</span><h2>{selectedCompetitor.name}</h2><p>{selectedCompetitor.statedPositioning}</p></div><a href={selectedCompetitor.officialUrl} target="_blank" rel="noreferrer"><ExternalLink size={14} /><span><b>{selectedCompetitor.sourceType}</b><small>Retrieved {selectedCompetitor.retrieved}</small></span><ArrowUpRight size={14} /></a></div>
+                    <div className="dossier-grid"><div><span className="section-label">Company-stated platform</span><strong>{selectedCompetitor.platform}</strong><ReliabilityBadge value={selectedCompetitor.reliability} /></div><div><span className="section-label">Company-stated modules</span><div className="module-list">{selectedCompetitor.modules.map((module) => <span key={module}>{module}</span>)}</div></div></div>
+                    <div className="intersection-section"><div className="segment-heading"><div><span className="panel-kicker">Cross-sectional navigation</span><h2>Market intersections</h2></div><p>Open any market to carry the intersection into the market hierarchy, its segments, and the explainable compliance-intensity workbench.</p></div><div className="intersection-grid">{selectedCompetitor.marketRelevance.map((vertical) => { const segments = marketSegments.filter((segment) => segment.vertical === vertical); return <button key={vertical} onClick={() => openMarket(vertical)}><span><Factory size={15} /></span><div><b>{vertical}</b><small>{segments.length} mapped segments · {new Set(segments.flatMap((segment) => segment.agencies)).size} agency families</small></div><ChevronRight size={14} /></button>; })}</div></div>
+                    <div className="competitor-policy"><ShieldCheck size={17} /><span><b>Evidence boundary</b> These are company statements from official sources—not independently verified feature-depth, packaging, adoption, or comparative-performance claims.</span></div>
+                  </div>
+                </section>
+                <section className="battlecard-bar"><div><span className="panel-kicker">Evidence-gated output</span><h2>{selectedCompetitor.name} battlecard assembly</h2><p>Exports include sourced company statements and explicit evidence gaps. Unsupported comparisons remain blocked.</p></div><div className="gate-list"><span><Check size={12} /> Official source</span><span><Check size={12} /> Reliability labeled</span><span className="pending">Feature depth review required</span></div><button onClick={exportBattlecard}><Download size={14} /> Export draft battlecard</button></section>
+              </>}
               {active === "Regulations" && <section className={`feed-bar ${feedStatus}`}><div><RefreshCw size={15} /><span><b>Federal Register connector</b><small>{feedStatus === "live" ? `${liveRecords.length} live OSHA documents normalized with primary-source links` : feedStatus === "degraded" ? "Live feed unavailable; trusted static records remain available without an error screen" : "Checking the official public feed"}</small></span></div><mark>{feedStatus}</mark></section>}
               <section className="filter-bar">
                 <span><Filter size={14} /> Refine</span>
