@@ -46,6 +46,7 @@ export type CompetitorIntelligence = {
   };
   customerProof: Array<{ customer: string; industry: string; outcome: string; sourceUrl: string; caveat: string }>;
   reviewSignals: Array<{ platform: string; score: string; sample: string; themes: string[]; sourceUrl: string; caveat: string }>;
+  forumSignals?: Array<{ platform: string; observedAt: string; theme: string; summary: string; sourceUrl: string; caveat: string }>;
   activity: Array<{ date: string; type: string; title: string; summary: string; sourceUrl: string }>;
   questionsToTest: string[];
   sources: IntelligenceSource[];
@@ -146,6 +147,11 @@ export const deepCompetitorIntelligence: Record<string, CompetitorIntelligence> 
     reviewSignals: [
       { platform: "G2", score: "4.4 / 5", sample: "155 product reviews", themes: ["Ease of use is the dominant positive theme", "Centralized safety, chemical and compliance records", "Useful dashboards and recurring-action tracking", "Navigation can feel confusing or fragmented", "Some workflows feel rigid or require extra steps", "Support response and OSHA-recordability setup appear as diligence themes"], sourceUrl: "https://www.g2.com/products/velocityehs-ehs-software-to-outpace-risk/reviews", caveat: "Observed 2026-08-20. G2 reports verified identities, but the visible sample includes seller-invited and incentivized reviews. Treat themes as directional and segment by module and reviewer context." },
     ],
+    forumSignals: [
+      { platform: "Reddit · r/SafetyProfessionals", observedAt: "2026-08-20", theme: "Implementation and data governance", summary: "Practitioners describe implementation quality, standardized field design and duplicate control as major determinants of whether VelocityEHS data remains usable across locations.", sourceUrl: "https://www.reddit.com/r/SafetyProfessionals/comments/1q3zfpv/what_issues_do_you_have_with_the_current_ehs/", caveat: "Directional forum evidence only. Posters are anonymous and the comments are not a representative customer sample." },
+      { platform: "Reddit · r/SafetyProfessionals", observedAt: "2026-08-20", theme: "Configurability and specialist fit", summary: "A practitioner comparing JHA tools reported configurability limits for their requirements while another discussion praised the ergonomics product as a specialist strength.", sourceUrl: "https://www.reddit.com/r/SafetyProfessionals/comments/1jrakiz/jhajsa_software/", caveat: "Single-user observations. Use as discovery prompts, not a verified product weakness." },
+      { platform: "Reddit · r/SafetyProfessionals", observedAt: "2026-08-20", theme: "SDS administration friction", summary: "A current SDS user described intuitive training but recurring versioning and duplicate-cleanup work, suggesting an implementation and data-maintenance diligence area.", sourceUrl: "https://www.reddit.com/r/SafetyProfessionals/comments/1q3zfpv/what_issues_do_you_have_with_the_current_ehs/", caveat: "Module-specific anecdote; it should not be generalized to the full platform." },
+    ],
     activity: [
       { date: "2025-08-21", type: "AI launch", title: "VelocityAI introduced", summary: "VelocityEHS announced a unified intelligence engine embedded in Accelerate.", sourceUrl: "https://www.ehs.com/press_releases/velocityehs-introduces-velocityai/" },
       { date: "2025-01-29", type: "Platform", title: "Accelerate integration expanded", summary: "The company announced a more unified experience across its major solution families.", sourceUrl: "https://www.ehs.com/press-releases/velocityehs-launches-the-industrys-first-fully-integrated-ehs-platform-to-revolutionize-workplace-safety-and-risk-management/" },
@@ -193,6 +199,9 @@ export const deepCompetitorIntelligence: Record<string, CompetitorIntelligence> 
     customerProof: [],
     reviewSignals: [
       { platform: "G2", score: "3.9 / 5", sample: "68 reviews", themes: ["Customization depth", "Centralized occupational health", "Setup and navigation friction", "Mixed support experience"], sourceUrl: "https://www.g2.com/products/corityone/reviews", caveat: "Observed 2026-08-19. Themes are directional and include seller-invited or incentivized reviews." },
+    ],
+    forumSignals: [
+      { platform: "Reddit · r/SafetyProfessionals", observedAt: "2026-08-20", theme: "Long-term configurability", summary: "A practitioner in a multinational RFP discussion described Cority as adaptable to organizational needs after long-term use, while noting that all enterprise suites carry tradeoffs.", sourceUrl: "https://www.reddit.com/r/SafetyProfessionals/comments/1othsmo/rfp_on_a_safety_management_software_system/", caveat: "Anonymous positive anecdote; no independent confirmation of implementation scope or current edition." },
     ],
     activity: [
       { date: "2026-01-13", type: "AI launch", title: "Cortex AI introduced", summary: "Cority announced an intelligence layer and agent control center within CorityOne.", sourceUrl: "https://www.cority.com/blog/the-world-of-ehs-is-changing-cortex-ai-is-the-next-step/" },
