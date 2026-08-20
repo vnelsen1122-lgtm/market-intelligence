@@ -16,6 +16,7 @@ import {
   Info,
   LockKeyhole,
   Radar,
+  RefreshCw,
   Search,
   ShieldCheck,
   Sparkles,
@@ -36,6 +37,9 @@ import { marketSegments } from "./market-data";
 type WorkspaceTab = "Command center" | "Products" | "Evidence" | "Activity" | "Compare" | "Battle card" | "Intelligence inbox";
 type IntakeRecord = { id: string; competitorId: string; title: string; sourceType: string; sourceUrl: string; excerpt: string; tags: string[]; markets: string[]; modules: string[]; createdAt: string; status: "Needs review" };
 type ContextBrief = { subject: string; markets: string[]; modules: string[]; competitors: CompetitorProfile[]; caveat: string };
+type UploadDraft = { name: string; text: string; characters: number; error?: string };
+type SourceScan = { scannedAt: string; pages: Array<{ url: string; title?: string; description?: string; headings?: string[]; signals?: string[]; observedAt?: string; error?: string }> };
+type PublicationFeed = { refreshedAt: string; sources: Array<{ name: string; url: string; tier: string; status: string; error?: string; articles: Array<{ title: string; url: string; themes: string[] }> }> };
 
 const tabs: Array<{ label: WorkspaceTab; description: string }> = [
   { label: "Command center", description: "Position, strengths and pressure points" },
@@ -106,6 +110,12 @@ export function CompetitorWorkspace({ selectedCompetitorId, onSelectCompetitor, 
   const [intakeSourceUrl, setIntakeSourceUrl] = useState("");
   const [contextInput, setContextInput] = useState("");
   const [contextBrief, setContextBrief] = useState<ContextBrief | null>(null);
+  const [uploadDrafts, setUploadDrafts] = useState<UploadDraft[]>([]);
+  const [uploadStatus, setUploadStatus] = useState("");
+  const [sourceScan, setSourceScan] = useState<SourceScan | null>(null);
+  const [scanStatus, setScanStatus] = useState("");
+  const [publicationFeed, setPublicationFeed] = useState<PublicationFeed | null>(null);
+  const [feedStatus, setFeedStatus] = useState("");
 
   const selectedCompetitor = competitors.find((competitor) => competitor.id === selectedCompetitorId) ?? competitors[0];
   const intelligence = deepCompetitorIntelligence[selectedCompetitor.id];
@@ -141,10 +151,50 @@ export function CompetitorWorkspace({ selectedCompetitorId, onSelectCompetitor, 
     const next = [record, ...intakeRecords]; setIntakeRecords(next); window.localStorage.setItem("market-intelligence-competitor-intake", JSON.stringify(next)); setIntakeText(""); setIntakeTitle(""); setIntakeSourceUrl("");
   };
 
-  const inspectFile = async (file: File | undefined) => {
-    if (!file) return; setIntakeTitle(file.name);
-    if (/text|csv|markdown|json/.test(file.type) || /\.(txt|md|csv|json)$/i.test(file.name)) setIntakeText((await file.text()).slice(0, 30000));
-    else setIntakeText(`File queued for controlled document extraction: ${file.name}. Office and PDF content must be processed by the future access-controlled evidence service before publication.`);
+  const inspectFiles = async (files: FileList | null) => {
+    if (!files?.length) return;
+    setUploadStatus(`Extracting ${files.length} record${files.length === 1 ? "" : "s"}…`);
+    const drafts = await Promise.all([...files].map(async (file): Promise<UploadDraft> => {
+      const body = new FormData(); body.append("file", file);
+      try {
+        const response = await fetch("/api/competitors/extract", { method: "POST", body });
+        const result = await response.json() as { text?: string; characters?: number; error?: string };
+        return result.text ? { name: file.name, text: result.text, characters: result.characters ?? result.text.length } : { name: file.name, text: "", characters: 0, error: result.error ?? "No readable text extracted." };
+      } catch { return { name: file.name, text: "", characters: 0, error: "Extraction service could not be reached." }; }
+    }));
+    setUploadDrafts(drafts); setUploadStatus(`${drafts.filter((draft) => draft.text).length} of ${drafts.length} records ready for intelligence routing.`);
+  };
+
+  const routeUploadDrafts = () => {
+    const ready = uploadDrafts.filter((draft) => draft.text);
+    if (!ready.length) return;
+    const now = new Date().toISOString();
+    const records = ready.map((draft, index): IntakeRecord => {
+      const namedCompetitor = competitors.find((competitor) => draft.text.toLowerCase().includes(competitor.name.toLowerCase()) || draft.text.toLowerCase().includes(competitor.platform.toLowerCase()));
+      const competitorId = namedCompetitor?.id ?? selectedCompetitor.id;
+      const novaraContext = /\bkpa\b/i.test(draft.text) ? ["Novara context"] : [];
+      return { id: `intake-${Date.now()}-${index}`, competitorId, title: draft.name, sourceType: intakeSourceType, sourceUrl: intakeSourceUrl.trim(), excerpt: draft.text.slice(0, 1200), tags: unique([...findMatches(draft.text, languageFrames), ...novaraContext]), markets: findMatches(draft.text, marketTerms), modules: findMatches(draft.text, moduleTerms), createdAt: now, status: "Needs review" };
+    });
+    const next = [...records, ...intakeRecords]; setIntakeRecords(next); window.localStorage.setItem("market-intelligence-competitor-intake", JSON.stringify(next)); setUploadDrafts([]); setUploadStatus(`${records.length} records analyzed and routed to competitor review queues.`);
+  };
+
+  const refreshOfficialSources = async () => {
+    setScanStatus("Refreshing approved official sources…"); setSourceScan(null);
+    try {
+      const response = await fetch("/api/competitors/scan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ competitorId: selectedCompetitor.id }) });
+      const result = await response.json() as SourceScan & { error?: string };
+      if (!response.ok) throw new Error(result.error ?? "Source refresh failed.");
+      setSourceScan(result); setScanStatus(`${result.pages.filter((page) => !page.error).length} approved sources refreshed.`);
+    } catch (error) { setScanStatus(error instanceof Error ? error.message : "Source refresh failed."); }
+  };
+
+  const refreshPublicationFeed = async () => {
+    setFeedStatus("Refreshing EHS publications and agencies…"); setPublicationFeed(null);
+    try {
+      const response = await fetch("/api/competitors/feed", { cache: "no-store" });
+      const result = await response.json() as PublicationFeed;
+      setPublicationFeed(result); setFeedStatus(`${result.sources.filter((source) => source.status === "live").length} market sources live.`);
+    } catch { setFeedStatus("Publication refresh could not complete."); }
   };
 
   const buildContextBrief = () => {
@@ -235,7 +285,8 @@ export function CompetitorWorkspace({ selectedCompetitorId, onSelectCompetitor, 
 
     {activeTab === "Activity" && <div className="ci-activity-layout">
       <article className="panel ci-activity-stream"><header><div><span className="section-label">Change timeline</span><h2>Material product and company movement</h2></div><mark>{intelligence?.activity.length ?? 0} researched events</mark></header>{intelligence?.activity.length ? intelligence.activity.map((event) => <div key={`${event.date}-${event.title}`}><i /><span><small>{event.date} · {event.type}</small><b>{event.title}</b><p>{event.summary}</p></span><a href={event.sourceUrl} target="_blank" rel="noreferrer">Evidence <ArrowUpRight size={11} /></a></div>) : <div className="ci-empty"><Radar size={18} /><b>Baseline only</b><span>Newsroom, release-note and help-center monitoring has not completed its first research pass.</span></div>}{selectedIntake.map((record) => <div className="pending" key={record.id}><i /><span><small>{record.createdAt.slice(0, 10)} · {record.sourceType}</small><b>{record.title}</b><p>{record.tags.length ? `Detected frames: ${record.tags.join(", ")}` : "No controlled linguistic frame detected."}</p></span><mark>{record.status}</mark></div>)}</article>
-      <aside className="panel ci-monitor-plan"><span className="section-label">Monitoring surfaces</span>{selectedCompetitor.monitoredSurfaces.map((surface) => <a href={surface.url} target="_blank" rel="noreferrer" key={surface.label}><Radar size={13} /><span><b>{surface.label}</b><small>Snapshot · semantic diff · review</small></span><ArrowUpRight size={11} /></a>)}<div><LockKeyhole size={13} /><p>Automated snapshots require a database, scheduler and access-controlled review queue. They are not running in this static deployment yet.</p></div></aside>
+      <aside className="panel ci-monitor-plan"><span className="section-label">Official-source refresh</span><button onClick={refreshOfficialSources} disabled={scanStatus.startsWith("Refreshing")}><RefreshCw size={12} /> Refresh {selectedCompetitor.name}</button><small className="ci-live-status">{scanStatus || `${selectedCompetitor.monitoredSurfaces.length + (intelligence?.sources.length ?? 1)} approved surfaces ready`}</small>{sourceScan ? sourceScan.pages.map((page) => <a className={page.error ? "unavailable" : ""} href={page.url} target="_blank" rel="noreferrer" key={page.url}><Radar size={13} /><span><b>{page.title || new URL(page.url).hostname}</b><small>{page.error || page.signals?.join(" · ") || "Official source refreshed"}</small></span><ArrowUpRight size={11} /></a>) : selectedCompetitor.monitoredSurfaces.map((surface) => <a href={surface.url} target="_blank" rel="noreferrer" key={surface.label}><Radar size={13} /><span><b>{surface.label}</b><small>Approved official website</small></span><ArrowUpRight size={11} /></a>)}<div><ShieldCheck size={13} /><p>Only the competitor’s approved official domains are scanned. Results are live observations—not independent proof.</p></div></aside>
+      <article className="panel ci-publication-feed"><header><div><span className="section-label">External EHS signal layer</span><h2>Agencies and major industry publications</h2></div><button onClick={refreshPublicationFeed} disabled={feedStatus.startsWith("Refreshing")}><FileSearch size={12} /> Refresh market watch</button></header><small className="ci-live-status">{feedStatus || "OSHA, MSHA, EHS Today, Safety+Health and EHS Daily Advisor ready"}</small>{publicationFeed ? <div>{publicationFeed.sources.map((source) => <section key={source.name}><span><b>{source.name}</b><small>{source.tier} · {source.status}</small></span>{source.articles.slice(0, 5).map((article) => <a href={article.url} target="_blank" rel="noreferrer" key={article.url}><b>{article.title}</b><small>{article.themes.join(" · ") || "EHS market signal"}</small><ArrowUpRight size={11} /></a>)}{!source.articles.length && <small>{source.error || "No current article links detected."}</small>}</section>)}</div> : <div className="ci-feed-ready"><FileSearch size={18} /><b>Live web refresh is ready</b><span>Pull current headlines directly into the intelligence workspace instead of waiting for uploads.</span></div>}</article>
     </div>}
 
     {activeTab === "Compare" && <div className="ci-compare-workspace">
@@ -249,7 +300,7 @@ export function CompetitorWorkspace({ selectedCompetitorId, onSelectCompetitor, 
     </div>}
 
     {activeTab === "Intelligence inbox" && <div className="ci-intake-layout">
-      <article className="panel ci-intake-form"><span className="panel-kicker">Contribution lane</span><h2>Add intelligence without publishing it as fact</h2><div className="ci-input-row"><label>Evidence type<select value={intakeSourceType} onChange={(event) => setIntakeSourceType(event.target.value)}>{sourceTypes.map((type) => <option key={type}>{type}</option>)}</select></label><label>Title<input value={intakeTitle} onChange={(event) => setIntakeTitle(event.target.value)} placeholder="Event brief, pricing quote, customer observation…" /></label></div><label className="ci-file-input"><UploadCloud size={16} /><span><b>Choose a source file</b><small>TXT, Markdown, CSV and JSON analyze locally. Office files require the secure document pipeline.</small></span><input type="file" onChange={(event) => inspectFile(event.target.files?.[0])} /></label><label>Source URL or reference<input value={intakeSourceUrl} onChange={(event) => setIntakeSourceUrl(event.target.value)} placeholder="Optional public URL or controlled reference" /></label><label>Evidence text<textarea value={intakeText} onChange={(event) => setIntakeText(event.target.value)} placeholder="Paste a transcript excerpt, comparative quote, pricing discussion, field note, or public-source passage." /></label><button onClick={saveIntake} disabled={!intakeText.trim()}><Sparkles size={14} /> Analyze and add to local review queue</button><footer><ShieldCheck size={13} /> Linguistic tags route information; they do not verify the underlying claim.</footer></article>
+      <article className="panel ci-intake-form"><span className="panel-kicker">Supplemental evidence lane</span><h2>Analyze records and route the intelligence</h2><p className="ci-intake-priority">Official websites and publications are the primary feed. Uploads add field notes, quotes, transcripts and historical evidence.</p><div className="ci-input-row"><label>Evidence type<select value={intakeSourceType} onChange={(event) => setIntakeSourceType(event.target.value)}>{sourceTypes.map((type) => <option key={type}>{type}</option>)}</select></label><label>Title<input value={intakeTitle} onChange={(event) => setIntakeTitle(event.target.value)} placeholder="Event brief, pricing quote, customer observation…" /></label></div><label className="ci-file-input"><UploadCloud size={16} /><span><b>Choose one or many records</b><small>TXT, CSV, JSON, HTML, DOCX, PPTX, XLSX and readable PDFs are extracted and analyzed.</small></span><input type="file" multiple accept=".txt,.md,.csv,.tsv,.json,.html,.htm,.xml,.docx,.pptx,.xlsx,.pdf" onChange={(event) => inspectFiles(event.target.files)} /></label>{uploadStatus && <small className="ci-live-status">{uploadStatus}</small>}{uploadDrafts.length > 0 && <div className="ci-upload-drafts">{uploadDrafts.map((draft) => <span className={draft.error ? "error" : ""} key={draft.name}><b>{draft.name}</b><small>{draft.error || `${draft.characters.toLocaleString()} readable characters · ready to route`}</small></span>)}<button onClick={routeUploadDrafts} disabled={!uploadDrafts.some((draft) => draft.text)}><Sparkles size={13} /> Analyze and route {uploadDrafts.filter((draft) => draft.text).length} records</button></div>}<label>Source URL or reference<input value={intakeSourceUrl} onChange={(event) => setIntakeSourceUrl(event.target.value)} placeholder="Optional public URL or controlled reference" /></label><label>Paste a single evidence record<textarea value={intakeText} onChange={(event) => setIntakeText(event.target.value)} placeholder="Paste a transcript excerpt, comparative quote, pricing discussion, field note, or public-source passage." /></label><button onClick={saveIntake} disabled={!intakeText.trim()}><Sparkles size={14} /> Analyze and route pasted evidence</button><footer><ShieldCheck size={13} /> Records are classified by competitor, messaging frame, market and module. They remain reviewable evidence—not automatically verified fact.</footer></article>
       <article className="panel ci-context-brief"><span className="panel-kicker">Account and website context</span><h2>Map a prospect to likely EHS priorities</h2><p>Paste a company description, profile, website text, or notes. The system routes market, workflow, and competitor candidates.</p><textarea value={contextInput} onChange={(event) => setContextInput(event.target.value)} placeholder="Example: A concrete contractor operating large data-center construction sites with a mobile field workforce…" /><button onClick={buildContextBrief} disabled={!contextInput.trim()}><Sparkles size={14} /> Build routing brief</button>{contextBrief && <div className="ci-brief-result"><span><b>Market candidates</b>{contextBrief.markets.map((item) => <mark key={item}>{item}</mark>)}</span><span><b>Likely workflow priorities</b>{contextBrief.modules.map((item) => <mark key={item}>{item}</mark>)}</span><span><b>Likely competitive set</b>{contextBrief.competitors.map((item) => <button key={item.id} onClick={() => onSelectCompetitor(item.id)}>{item.name}<ChevronRight size={11} /></button>)}</span><small><Info size={11} /> {contextBrief.caveat}</small></div>}</article>
       <article className="panel ci-review-queue"><header><div><span className="panel-kicker">Local review queue</span><h2>{selectedCompetitor.name} contributions</h2></div><mark>{selectedIntake.length} pending</mark></header>{selectedIntake.length ? selectedIntake.map((record) => <div key={record.id}><span><small>{record.createdAt.slice(0, 10)} · {record.sourceType}</small><b>{record.title}</b><p>{record.excerpt}</p><i>{unique([...record.tags, ...record.markets, ...record.modules]).map((tag) => <mark key={tag}>{tag}</mark>)}</i></span><mark>{record.status}</mark></div>) : <div className="ci-empty"><UploadCloud size={18} /><b>No contributed intelligence yet</b><span>Uploads stay in this browser only until authenticated shared evidence storage is connected.</span></div>}</article>
     </div>}
