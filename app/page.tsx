@@ -407,6 +407,7 @@ export default function Home() {
   const selectNavigation = (label: string) => {
     setActive(label);
     if (label === "Competitors") setFocusMode("competitor");
+    if (label === "Markets") setFocusMode("market");
     if (label !== "Sources") {
       const first = allRecords.find((record) => label === "Data Catalog" || record.domain === label || (label === "Markets" && record.domain === "Industries") || (label === "Enforcement" && record.domain === "Enforcement & Injuries"));
       if (first) setSelectedId(first.id);
