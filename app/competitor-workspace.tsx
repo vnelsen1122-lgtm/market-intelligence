@@ -224,7 +224,7 @@ export function CompetitorWorkspace({ selectedCompetitorId, onSelectCompetitor, 
 
   return <section className="ci-suite">
     <div className="ci-scope-rail panel">
-      <div className="ci-suite-title"><span className="panel-kicker">Competitor suite</span><b>{competitors.length} companies · {researchCount} priority research passes</b></div>
+      <div className="ci-suite-title"><span className="panel-kicker">Competitor suite</span><b>{researchCount} researched competitors · official sources monitored</b></div>
       <label><Search size={13} /><input value={competitorQuery} onChange={(event) => setCompetitorQuery(event.target.value)} placeholder="Company, module, market, message" /></label>
       <select value={archetype} onChange={(event) => setArchetype(event.target.value)}>{competitorArchetypes.map((item) => <option key={item}>{item}</option>)}</select>
       <select aria-label="Selected competitor" value={selectedCompetitor.id} onChange={(event) => onSelectCompetitor(event.target.value)}>{selectorCompetitors.map((competitor) => <option value={competitor.id} key={competitor.id}>{competitor.name}</option>)}</select>
@@ -264,7 +264,7 @@ export function CompetitorWorkspace({ selectedCompetitorId, onSelectCompetitor, 
 
     {activeTab === "Command center" && <div className="ci-command-grid">
       <article className="panel ci-decision-room">
-        <header><div><span className="section-label">Decision view</span><h2>Why {selectedCompetitor.name} matters</h2></div><mark>{intelligence ? "Public research current" : "Research required"}</mark></header>
+        <header><div><span className="section-label">Decision view</span><h2>Why {selectedCompetitor.name} matters</h2></div><mark>{intelligence ? `Reviewed ${intelligence.sources[0]?.observedAt ?? selectedCompetitor.retrieved}` : "Research required"}</mark></header>
         <div className="ci-decision-columns">
           <section><span className="ci-section-icon"><Radar size={14} /></span><b>Why they win</b>{(intelligence?.whyTheyWin ?? [{ claim: selectedCompetitor.statedPositioning, basis: "Official company positioning; deeper corroboration required.", sourceUrl: selectedCompetitor.officialUrl }]).map((item) => <details key={item.claim}><summary>{item.claim}</summary><p>{item.basis}</p><a href={item.sourceUrl} target="_blank" rel="noreferrer">View evidence <ArrowUpRight size={11} /></a></details>)}</section>
           <section><span className="ci-section-icon"><AlertTriangle size={14} /></span><b>Pressure points to test</b>{(intelligence?.pressurePoints ?? [{ signal: "Pricing, implementation, module depth and customer outcomes have not been researched.", boundary: "Unknown, not a verified weakness." }]).map((item) => <details key={item.signal}><summary>{item.signal}</summary><p>{item.boundary}</p></details>)}</section>
@@ -319,7 +319,7 @@ export function CompetitorWorkspace({ selectedCompetitorId, onSelectCompetitor, 
       <span><small>Selected</small><b>{selectedCompetitor.name}</b></span>
       <span><small>Research</small><b>{intelligence?.researchStatus ?? "Source map only"}</b></span>
       <span><small>Evidence</small><b>{intelligence?.sources.length ?? selectedCompetitor.monitoredSurfaces.length + 1} public sources</b></span>
-      <span className="locked"><LockKeyhole size={12} /><small>Internal layer</small><b>Locked pending authentication</b></span>
+      <span className="locked"><LockKeyhole size={12} /><small>Internal evidence</small><b>Excluded from public build</b></span>
       <button onClick={exportBattlecard}><Download size={12} /> Export public-safe card</button>
     </div>
   </section>;
