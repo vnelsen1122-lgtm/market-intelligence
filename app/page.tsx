@@ -359,6 +359,7 @@ export default function Home() {
   const [regulatoryDocuments, setRegulatoryDocuments] = useState<FeedResponse["records"]>([]);
   const [selectedRegulationNumber, setSelectedRegulationNumber] = useState("");
   const [regulationStage, setRegulationStage] = useState("All stages");
+  const [contextOpen, setContextOpen] = useState(false);
 
   useEffect(() => {
     let activeRequest = true;
@@ -515,15 +516,6 @@ export default function Home() {
 
         <div className={`content intelligence-content${active === "Competitors" ? " competitor-content" : active === "Injuries" ? " injury-content" : ""}`}>
           <div className="demo-banner"><CircleDot size={13} /><b>Coverage notice</b> Live, mapped, licensed, and awaiting-access sources are labeled separately. No private records are included until explicitly approved.</div>
-          {active !== "Sources" && <section className={`focus-context${active === "Competitors" ? " competitor" : ""}`}>
-            <span className="context-label"><PanelsTopLeft size={13} /> CONTEXT</span>
-            <label>Lens<select value={focusMode} onChange={(event) => event.target.value === "competitor" ? openCompetitor(selectedCompetitorId) : setFocusMode("market")}><option value="market">Market</option><option value="competitor">Competitor</option></select></label>
-            {focusMode === "competitor" && <label>Competitor<select value={selectedCompetitorId} onChange={(event) => openCompetitor(event.target.value)}>{competitors.map((competitor) => <option value={competitor.id} key={competitor.id}>{competitor.name}</option>)}</select></label>}
-            <label>Market<select value={selectedVertical} onChange={(event) => { setSelectedVertical(event.target.value); setSelectedSegment("All segments"); }}><option>All markets</option>{(focusMode === "competitor" ? verticals.filter((vertical) => selectedCompetitor.marketRelevance.includes(vertical)) : verticals).map((vertical) => <option key={vertical}>{vertical}</option>)}</select></label>
-            <label>Segment<select value={selectedSegment} onChange={(event) => setSelectedSegment(event.target.value)}><option value="All segments">All segments</option>{marketSegments.filter((segment) => selectedVertical === "All markets" || segment.vertical === selectedVertical).map((segment) => <option value={segment.id} key={segment.id}>{segment.segment}</option>)}</select></label>
-            <label>Geography<select value={selectedGeography} onChange={(event) => setSelectedGeography(event.target.value)}><option>North America</option><option>United States</option><option>State</option><option>Metro</option><option>Facility / project</option></select></label>
-            <div className="focus-path"><small>Active cross-section</small><b>{focusMode === "competitor" ? `${selectedCompetitor.name} / ` : ""}{selectedVertical}{selectedSegment !== "All segments" ? ` / ${marketSegments.find((segment) => segment.id === selectedSegment)?.segment}` : ""}</b><span>{selectedGeography} · retained across workspaces</span></div>
-          </section>}
           <section className="workspace-heading">
             <div>{!["Competitors", "Injuries"].includes(active) && <span className="eyebrow"><FileSearch size={14} /> EVIDENCE-BACKED INTELLIGENCE</span>}<h1>{active === "Injuries" ? "Workplace Risk Intelligence" : active}</h1>{active !== "Injuries" && <p>{active === "Sources" ? "Inspect coverage, ownership, update method, and source health before trusting an output." : active === "Competitors" ? "Research competitors by product depth, messaging, customer evidence, corporate movement, and market relevance." : active === "Data Operations" ? "Control bulk imports, live connectors, schema contracts, freshness, and publication gates from one place." : active === "Enforcement" ? "Track inspections, citations, penalties, repeat visits, establishments, and agency activity separately from injury records." : active === "Corporate Activity" ? "Track transactions, ownership, leadership, product moves, and messaging changes without mixing facts with interpretation." : active === "Contractor Management" ? "Analyze the contractor-risk market, buyer workflows, specialist competitors, regulatory exposure, and product signals." : active === "Sustainability" ? "Analyze sustainability regulation, reporting obligations, market demand, product coverage, and specialist competitors." : active === "Signals" ? "Review material changes across markets, hiring, regulations, competitors, enforcement, injuries, and corporate activity." : "Navigate connected evidence across markets, companies, regulations, enforcement, injuries, and economic signals."}</p>}</div>
             {!["Competitors", "Injuries"].includes(active) && <div className="workspace-meta"><span><b>{active === "Sources" ? sources.length : active === "Data Operations" ? sourceRegistry.length : filtered.length}</b> {active === "Data Operations" ? "registered sources" : "records in view"}</span><button><RefreshCw size={14} /> Last structured today</button></div>}
@@ -657,6 +649,16 @@ export default function Home() {
             </>
           )}
         </div>
+        {active !== "Sources" && <section className={`context-rail${contextOpen ? " open" : ""}`}>
+          <button className="context-rail-toggle" onClick={() => setContextOpen((current) => !current)} aria-expanded={contextOpen}><PanelsTopLeft size={13} /><span>Context</span><b>{focusMode === "competitor" ? `${selectedCompetitor.name} · ` : ""}{selectedVertical}</b><small>{selectedSegment !== "All segments" ? marketSegments.find((segment) => segment.id === selectedSegment)?.segment : selectedGeography}</small><ChevronRight className={contextOpen ? "open" : ""} size={13} /></button>
+          {contextOpen && <div className="context-rail-controls">
+            <label>Lens<select value={focusMode} onChange={(event) => event.target.value === "competitor" ? openCompetitor(selectedCompetitorId) : setFocusMode("market")}><option value="market">Market</option><option value="competitor">Competitor</option></select></label>
+            {focusMode === "competitor" && <label>Competitor<select value={selectedCompetitorId} onChange={(event) => openCompetitor(event.target.value)}>{competitors.map((competitor) => <option value={competitor.id} key={competitor.id}>{competitor.name}</option>)}</select></label>}
+            <label>Market<select value={selectedVertical} onChange={(event) => { setSelectedVertical(event.target.value); setSelectedSegment("All segments"); }}><option>All markets</option>{(focusMode === "competitor" ? verticals.filter((vertical) => selectedCompetitor.marketRelevance.includes(vertical)) : verticals).map((vertical) => <option key={vertical}>{vertical}</option>)}</select></label>
+            <label>Segment<select value={selectedSegment} onChange={(event) => setSelectedSegment(event.target.value)}><option value="All segments">All segments</option>{marketSegments.filter((segment) => selectedVertical === "All markets" || segment.vertical === selectedVertical).map((segment) => <option value={segment.id} key={segment.id}>{segment.segment}</option>)}</select></label>
+            <label>Geography<select value={selectedGeography} onChange={(event) => setSelectedGeography(event.target.value)}><option>North America</option><option>United States</option><option>State</option><option>Metro</option><option>Facility / project</option></select></label>
+          </div>}
+        </section>}
       </section>
     </main>
   );
