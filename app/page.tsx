@@ -33,6 +33,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { competitorArchetypes, competitors } from "./competitor-data";
 import { changeContract, corporateSourceHierarchy, messagingTaxonomy, monitoringJobs } from "./corporate-data";
+import { jurisdictionCounts, jurisdictions } from "./jurisdiction-data";
 import { marketSegments, verticals } from "./market-data";
 import { importContract, sourceRegistry } from "./source-registry";
 
@@ -293,6 +294,7 @@ export default function Home() {
   const [selectedVertical, setSelectedVertical] = useState("All markets");
   const [selectedSegment, setSelectedSegment] = useState("All segments");
   const [selectedGeography, setSelectedGeography] = useState("North America");
+  const [selectedJurisdictionCode, setSelectedJurisdictionCode] = useState("CA");
   const [focusMode, setFocusMode] = useState<FocusMode>("market");
   const [selectedCompetitorId, setSelectedCompetitorId] = useState(competitors[0].id);
   const [competitorArchetype, setCompetitorArchetype] = useState("All archetypes");
@@ -350,6 +352,7 @@ export default function Home() {
 
   const allRecords = useMemo(() => [...liveRecords, ...records], [liveRecords]);
   const selectedCompetitor = useMemo(() => competitors.find((competitor) => competitor.id === selectedCompetitorId) ?? competitors[0], [selectedCompetitorId]);
+  const selectedJurisdiction = useMemo(() => jurisdictions.find((jurisdiction) => jurisdiction.code === selectedJurisdictionCode) ?? jurisdictions[0], [selectedJurisdictionCode]);
   const visibleCompetitors = useMemo(() => competitors.filter((competitor) => competitorArchetype === "All archetypes" || competitor.archetype === competitorArchetype), [competitorArchetype]);
   const activeProductDomain = productDomains[active as keyof typeof productDomains];
   const focusedSegments = useMemo(() => marketSegments.filter((segment) => {
@@ -565,7 +568,7 @@ export default function Home() {
                 </div>
                 <div className="segment-explorer panel">
                   <div className="segment-heading"><div><span className="panel-kicker">Market hierarchy</span><h2>{selectedVertical === "All markets" ? "Priority EHS segments" : selectedVertical}</h2></div><p>Open a segment to carry its NAICS, geography, workforce, agency, obligation, exposure, and module context across the application.</p></div>
-                  <div className="segment-table"><div className="segment-row segment-head"><span>Segment</span><span>NAICS</span><span>Workforce</span><span>Agency coverage</span><span>Product workflows</span></div>{focusedSegments.map((segment) => <button className={selectedSegment === segment.id ? "segment-row selected" : "segment-row"} key={segment.id} onClick={() => openMarket(segment.vertical, segment.id)}><span><b>{segment.segment}</b><small>{segment.vertical}</small></span><span>{segment.naics.join(", ")}</span><span>{segment.workforce.slice(0, 2).join(" · ")}</span><span>{segment.agencies.slice(0, 2).join(" · ")}</span><span>{segment.novaraModules.slice(0, 2).join(" · ")}<ChevronRight size={13} /></span></button>)}</div>
+                  <div className="segment-table"><div className="segment-row segment-head"><span>Segment</span><span>NAICS</span><span>Workforce</span><span>Agency coverage</span><span>Product workflows</span></div>{focusedSegments.map((segment) => <button className={selectedSegment === segment.id ? "segment-row selected" : "segment-row"} key={segment.id} onClick={() => openMarket(segment.vertical, segment.id)}><span><b>{segment.segment}</b><small>{segment.vertical}</small></span><span>{segment.naics.join(", ")}</span><span>{segment.workforce.slice(0, 2).join(" · ")}</span><span>{segment.agencies.slice(0, 2).join(" · ")}</span><span>{segment.productWorkflows.slice(0, 2).join(" · ")}<ChevronRight size={13} /></span></button>)}</div>
                 </div>
                 {activeSegment && intensity && <div className="intensity-workbench panel">
                   <div className="intensity-summary"><div><span className="panel-kicker">Explainable compliance intensity</span><h2>{activeSegment.segment}</h2><p>This is a structural signal, not a market ranking. Missing enforcement and injury evidence is excluded and shown explicitly.</p></div><div className="intensity-score"><small>Structural signal</small><strong>{intensity.structuralSignal}</strong><span>/ 100</span><mark>{intensity.evidenceCoverage}% evidence coverage</mark></div></div>
@@ -582,6 +585,7 @@ export default function Home() {
               {active === "Enforcement" && <section className="enforcement-overview">
                 <div className="domain-brief panel"><div><span className="panel-kicker">Agency action intelligence</span><h2>Inspections, citations, penalties, and repeat activity</h2><p>Enforcement records remain distinct from injury cases and regulations. The shared keys are establishment, company, NAICS, geography, agency, standard, and time.</p></div><div className="domain-status"><span><b>Federal</b> OSHA · EPA · MSHA</span><span><b>State</b> connector matrix</span></div></div>
                 <div className="enforcement-dimensions">{["Agency and jurisdiction", "Inspection and case", "Standard and violation", "Initial and final penalty", "Repeat or willful status", "Return visits and related sites", "Establishment and parent", "NAICS and geography"].map((item) => <div className="panel" key={item}><Check size={13} /><span>{item}</span></div>)}</div>
+                <div className="jurisdiction-workbench panel"><div className="jurisdiction-summary"><div><span className="panel-kicker">OSHA jurisdiction register</span><h2>Coverage is a dimension, not an assumption</h2><p>The register distinguishes private- and public-sector authority for every state, the District of Columbia, Puerto Rico, and the U.S. Virgin Islands.</p></div><div className="jurisdiction-counts"><span><b>{jurisdictionCounts.full}</b> full plans</span><span><b>{jurisdictionCounts.publicOnly}</b> public-only</span><span><b>{jurisdictionCounts.federal}</b> federal jurisdictions</span></div></div><div className="jurisdiction-detail"><label>Jurisdiction<select value={selectedJurisdictionCode} onChange={(event) => setSelectedJurisdictionCode(event.target.value)}>{jurisdictions.map((jurisdiction) => <option value={jurisdiction.code} key={jurisdiction.code}>{jurisdiction.name}</option>)}</select></label><div><span>Plan type</span><b>{selectedJurisdiction.planType}</b></div><div><span>Private sector</span><b>{selectedJurisdiction.privateSectorAuthority}</b></div><div><span>Public sector</span><b>{selectedJurisdiction.publicSectorAuthority}</b></div><div><span>Connector</span><mark className={selectedJurisdiction.connectorStatus === "Federal dataset mapped" ? "mapped" : "required"}>{selectedJurisdiction.connectorStatus}</mark></div></div><div className="jurisdiction-groups"><div><b>Full State Plans</b><p>{jurisdictions.filter((item) => item.planType === "Full State Plan").map((item) => item.code).join(" · ")}</p></div><div><b>Public-sector-only plans</b><p>{jurisdictions.filter((item) => item.planType === "Public Sector Only").map((item) => item.code).join(" · ")}</p></div><div><b>Federal OSHA private-sector coverage</b><p>{jurisdictions.filter((item) => item.privateSectorAuthority === "Federal OSHA").map((item) => item.code).join(" · ")}</p></div></div></div>
                 <div className="domain-roadmap panel"><Info size={16} /><span><b>Coverage rule</b> State Plan coverage is shown independently. A missing state connector cannot be interpreted as zero enforcement.</span></div>
               </section>}
               {active === "Signals" && <section className="signals-workspace">
