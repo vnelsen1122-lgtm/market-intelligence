@@ -31,6 +31,7 @@ import {
   UploadCloud,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { buildComparisonChecks } from "./comparison-contracts";
 import { competitorArchetypes, competitors } from "./competitor-data";
 import { changeContract, corporateSourceHierarchy, messagingTaxonomy, monitoringJobs } from "./corporate-data";
 import { jurisdictionCounts, jurisdictions } from "./jurisdiction-data";
@@ -79,7 +80,7 @@ type IntelligenceFeed = {
   economic: {
     status: "live" | "degraded";
     source: string;
-    records: Array<{ id: string; label: string; naics: string; employment: number | null; establishments: number | null; employmentGrowth: number | null; establishmentGrowth: number | null; averageWeeklyWage: number | null; period: string; status: "live" | "unavailable" }>;
+    records: Array<{ id: string; segmentId: string; label: string; naics: string; employment: number | null; establishments: number | null; employmentGrowth: number | null; establishmentGrowth: number | null; averageWeeklyWage: number | null; period: string; status: "live" | "unavailable"; geography: string; ownership: string; coverageLevel: "Exact NAICS" | "NAICS proxy"; denominatorUnit: string }>;
   };
   regulatory: {
     status: "live" | "degraded";
@@ -391,6 +392,9 @@ export default function Home() {
   const comparisonSegment = useMemo(() => marketSegments.find((segment) => segment.id === comparisonSegmentId), [comparisonSegmentId]);
   const intensity = useMemo(() => calculateStructuralIntensity(activeSegment), [activeSegment]);
   const comparisonIntensity = useMemo(() => calculateStructuralIntensity(comparisonSegment), [comparisonSegment]);
+  const comparisonChecks = useMemo(() => activeSegment && comparisonSegment
+    ? buildComparisonChecks(activeSegment, comparisonSegment, selectedGeography, intelligenceFeed?.economic.records ?? [])
+    : [], [activeSegment, comparisonSegment, intelligenceFeed, selectedGeography]);
 
   const filtered = useMemo(() => {
     const text = query.toLowerCase().trim();
@@ -581,6 +585,7 @@ export default function Home() {
                   <div className="intensity-policy"><ShieldCheck size={17} /><span><b>Trust rule</b> A full compliance-intensity score cannot publish until required sources, denominators, periods, and geography coverage are recorded for every weighted factor.</span></div>
                 </div>}
                 {activeSegment && intensity && comparisonSegment && comparisonIntensity && <div className="segment-comparison panel"><div className="comparison-heading"><div><span className="panel-kicker">Cross-segment comparison</span><h2>{activeSegment.segment} versus</h2></div><label>Comparison segment<select value={comparisonSegmentId} onChange={(event) => setComparisonSegmentId(event.target.value)}>{marketSegments.map((segment) => <option value={segment.id} key={segment.id}>{segment.segment}</option>)}</select></label></div><div className="comparison-table"><div className="comparison-row comparison-head"><span>Factor</span><span>{activeSegment.segment}</span><span>{comparisonSegment.segment}</span><span>Evidence state</span></div>{intensity.factors.map((factor, index) => { const comparisonFactor = comparisonIntensity.factors[index]; return <div className="comparison-row" key={factor.label}><span><b>{factor.label}</b><small>{factor.weight}% model weight</small></span><span>{factor.value === null ? <mark>Not scored</mark> : <strong>{factor.value}</strong>}</span><span>{comparisonFactor.value === null ? <mark>Not scored</mark> : <strong>{comparisonFactor.value}</strong>}</span><span>{factor.value === null || comparisonFactor.value === null ? "Denominator-backed source required" : "Mapped structural evidence"}</span></div>; })}</div><div className="comparison-footer"><span><b>{activeSegment.segment}</b><strong>{intensity.structuralSignal}</strong><small>{intensity.evidenceCoverage}% evidence coverage</small></span><span><b>{comparisonSegment.segment}</b><strong>{comparisonIntensity.structuralSignal}</strong><small>{comparisonIntensity.evidenceCoverage}% evidence coverage</small></span><p><Info size={13} /> Structural signals can be compared; enforcement and injury density remain blocked until both segments use matched periods, geographies, populations, and source coverage.</p></div></div>}
+                {activeSegment && comparisonSegment && <div className="comparison-contract panel"><div className="contract-heading"><div><span className="panel-kicker">Publication eligibility</span><h2>Matched evidence contract</h2><p>Every analytical rate must declare its numerator, denominator, period, geography, ownership scope, and source coverage.</p></div><span><b>{comparisonChecks.filter((check) => check.status === "Eligible").length}</b> of {comparisonChecks.length} rates eligible</span></div><div className="contract-table"><div className="contract-row contract-head"><span>Measure</span><span>Numerator / denominator</span><span>Source & period</span><span>Coverage decision</span></div>{comparisonChecks.map((check) => <div className="contract-row" key={check.factor}><span><b>{check.factor}</b><small>{check.geography}</small></span><span><b>{check.numerator}</b><small>÷ {check.denominator}</small></span><span><b>{check.source}</b><small>{check.period}</small></span><span><mark className={check.status.toLowerCase()}>{check.status}</mark><small>{check.reason}</small></span></div>)}</div><div className="contract-rule"><ShieldCheck size={14} /><span><b>No silent substitution.</b> A broader NAICS proxy can provide directional context, but it cannot publish as an exact subsegment rate.</span></div></div>}
               </section>}
               {activeProductDomain && <section className="product-domain">
                 <div className="domain-brief panel"><div><span className="panel-kicker">Independent product intelligence domain</span><h2>{active}</h2><p>This workspace has its own buyers, regulations, workflows, specialist competitors, evidence sources, and market signals. It is connected to core EHS intelligence without being collapsed into it.</p></div><div className="domain-status"><span><b>Mapped</b> domain model</span><span><b>Next</b> live connectors</span></div></div>

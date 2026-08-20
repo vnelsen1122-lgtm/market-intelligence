@@ -4,6 +4,7 @@ export const revalidate = 21600;
 
 type EconomicIndicator = {
   id: string;
+  segmentId: string;
   label: string;
   naics: string;
   employment: number | null;
@@ -13,24 +14,39 @@ type EconomicIndicator = {
   averageWeeklyWage: number | null;
   period: string;
   status: "live" | "unavailable";
+  geography: "United States";
+  ownership: "Private sector";
+  coverageLevel: "Exact NAICS" | "NAICS proxy";
+  denominatorUnit: "Covered employment and establishments";
 };
 
 const qcewSegments = [
-  { id: "construction", label: "Construction", naics: "23", fileCode: "23" },
-  { id: "manufacturing", label: "Manufacturing", naics: "31-33", fileCode: "31_33" },
-  { id: "oil-gas", label: "Oil & gas extraction", naics: "211", fileCode: "211" },
-  { id: "electric-power", label: "Electric power", naics: "2211", fileCode: "2211" },
-  { id: "water", label: "Water, sewage & other systems", naics: "2213", fileCode: "2213" },
-  { id: "waste", label: "Waste management & remediation", naics: "562", fileCode: "562" },
-  { id: "concrete", label: "Poured concrete structure contractors", naics: "238110", fileCode: "238110" },
-  { id: "electrical-contractors", label: "Electrical contractors", naics: "238210", fileCode: "238210" },
-  { id: "food-manufacturing", label: "Food manufacturing", naics: "311", fileCode: "311" },
-  { id: "semiconductors", label: "Semiconductor manufacturing", naics: "334413", fileCode: "334413" },
-  { id: "oil-gas-support", label: "Support activities for oil & gas", naics: "213112", fileCode: "213112" },
-  { id: "solar-generation", label: "Solar electric power generation", naics: "221114", fileCode: "221114" },
-  { id: "hazardous-waste", label: "Waste treatment & disposal", naics: "5622", fileCode: "5622" },
-  { id: "remediation", label: "Remediation services", naics: "562910", fileCode: "562910" },
-];
+  { id: "construction-commercial", segmentId: "construction-commercial", label: "Commercial & institutional construction", naics: "236220", fileCode: "236220", coverageLevel: "Exact NAICS" },
+  { id: "construction-infrastructure", segmentId: "construction-infrastructure", label: "Heavy civil & infrastructure", naics: "237", fileCode: "237", coverageLevel: "NAICS proxy" },
+  { id: "construction-data-centers", segmentId: "construction-data-centers", label: "Data center construction", naics: "236220", fileCode: "236220", coverageLevel: "NAICS proxy" },
+  { id: "construction-industrial", segmentId: "construction-industrial", label: "Industrial building construction", naics: "236210", fileCode: "236210", coverageLevel: "Exact NAICS" },
+  { id: "construction-concrete", segmentId: "construction-concrete", label: "Poured concrete structure contractors", naics: "238110", fileCode: "238110", coverageLevel: "Exact NAICS" },
+  { id: "construction-electrical", segmentId: "construction-electrical", label: "Electrical contractors", naics: "238210", fileCode: "238210", coverageLevel: "Exact NAICS" },
+  { id: "construction-roofing", segmentId: "construction-roofing", label: "Roofing contractors", naics: "238160", fileCode: "238160", coverageLevel: "Exact NAICS" },
+  { id: "manufacturing-durable", segmentId: "manufacturing-durable", label: "Durable goods manufacturing", naics: "31-33", fileCode: "31_33", coverageLevel: "NAICS proxy" },
+  { id: "manufacturing-chemicals", segmentId: "manufacturing-chemicals", label: "Chemical manufacturing", naics: "325", fileCode: "325", coverageLevel: "Exact NAICS" },
+  { id: "manufacturing-food", segmentId: "manufacturing-food", label: "Food manufacturing", naics: "311", fileCode: "311", coverageLevel: "Exact NAICS" },
+  { id: "manufacturing-primary-metals", segmentId: "manufacturing-primary-metals", label: "Primary metal manufacturing", naics: "331", fileCode: "331", coverageLevel: "Exact NAICS" },
+  { id: "manufacturing-semiconductors", segmentId: "manufacturing-semiconductors", label: "Semiconductor manufacturing", naics: "334413", fileCode: "334413", coverageLevel: "Exact NAICS" },
+  { id: "manufacturing-refining", segmentId: "manufacturing-refining", label: "Petroleum refineries", naics: "324110", fileCode: "324110", coverageLevel: "Exact NAICS" },
+  { id: "energy-oil-gas", segmentId: "energy-oil-gas", label: "Oil & gas operations", naics: "211", fileCode: "211", coverageLevel: "NAICS proxy" },
+  { id: "energy-oil-extraction", segmentId: "energy-oil-extraction", label: "Crude petroleum extraction", naics: "211120", fileCode: "211120", coverageLevel: "Exact NAICS" },
+  { id: "energy-well-drilling", segmentId: "energy-well-drilling", label: "Drilling oil and gas wells", naics: "213111", fileCode: "213111", coverageLevel: "Exact NAICS" },
+  { id: "energy-oil-support", segmentId: "energy-oil-support", label: "Support activities for oil & gas", naics: "213112", fileCode: "213112", coverageLevel: "Exact NAICS" },
+  { id: "energy-renewables", segmentId: "energy-renewables", label: "Renewable power construction & operations", naics: "221114", fileCode: "221114", coverageLevel: "NAICS proxy" },
+  { id: "utilities-generation", segmentId: "utilities-generation", label: "Electric power generation", naics: "22111", fileCode: "22111", coverageLevel: "NAICS proxy" },
+  { id: "utilities-electric", segmentId: "utilities-electric", label: "Electric power transmission & distribution", naics: "22112", fileCode: "22112", coverageLevel: "Exact NAICS" },
+  { id: "waste-solid", segmentId: "waste-solid", label: "Solid waste collection & disposal", naics: "5621", fileCode: "5621", coverageLevel: "NAICS proxy" },
+  { id: "waste-hazardous", segmentId: "waste-hazardous", label: "Waste treatment & disposal", naics: "5622", fileCode: "5622", coverageLevel: "NAICS proxy" },
+  { id: "waste-remediation", segmentId: "waste-remediation", label: "Remediation services", naics: "562910", fileCode: "562910", coverageLevel: "Exact NAICS" },
+  { id: "waste-material-recovery", segmentId: "waste-material-recovery", label: "Materials recovery facilities", naics: "562920", fileCode: "562920", coverageLevel: "Exact NAICS" },
+  { id: "water-utilities", segmentId: "water-utilities", label: "Water, sewage & other systems", naics: "2213", fileCode: "2213", coverageLevel: "Exact NAICS" },
+] as const;
 
 function parseCsvRow(row: string) {
   const values: string[] = [];
@@ -76,6 +92,7 @@ async function fetchQcew(segment: typeof qcewSegments[number]): Promise<Economic
   if (!nationalPrivate) throw new Error("National QCEW row unavailable");
   return {
     id: segment.id,
+    segmentId: segment.segmentId,
     label: segment.label,
     naics: segment.naics,
     employment: numeric(nationalPrivate.month3_emplvl),
@@ -85,6 +102,10 @@ async function fetchQcew(segment: typeof qcewSegments[number]): Promise<Economic
     averageWeeklyWage: numeric(nationalPrivate.avg_wkly_wage),
     period: `${year} Q${quarter}`,
     status: "live",
+    geography: "United States",
+    ownership: "Private sector",
+    coverageLevel: segment.coverageLevel,
+    denominatorUnit: "Covered employment and establishments",
   };
 }
 
@@ -127,6 +148,7 @@ export async function GET() {
   ]);
   const economic = economicResults.map((result, index) => result.status === "fulfilled" ? result.value : ({
     id: qcewSegments[index].id,
+    segmentId: qcewSegments[index].segmentId,
     label: qcewSegments[index].label,
     naics: qcewSegments[index].naics,
     employment: null,
@@ -136,6 +158,10 @@ export async function GET() {
     averageWeeklyWage: null,
     period: "2025 Q1",
     status: "unavailable" as const,
+    geography: "United States" as const,
+    ownership: "Private sector" as const,
+    coverageLevel: qcewSegments[index].coverageLevel,
+    denominatorUnit: "Covered employment and establishments" as const,
   }));
   return NextResponse.json({
     retrievedAt,
