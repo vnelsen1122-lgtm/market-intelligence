@@ -123,7 +123,7 @@ type IntelligenceFeed = {
 };
 
 const navigation = [
-  { label: "Data Catalog", icon: Database },
+  { label: "Data", icon: Database },
   { label: "Competitors", icon: Building2 },
   { label: "Markets", icon: Factory },
   { label: "Injuries", icon: HardHat },
@@ -131,9 +131,13 @@ const navigation = [
   { label: "Regulations", icon: BookOpenCheck },
   { label: "Enforcement", icon: ShieldCheck },
   { label: "Corporate Activity", icon: Network },
-  { label: "Signals", icon: Sparkles },
-  { label: "Data Operations", icon: UploadCloud },
-  { label: "Sources", icon: Database },
+];
+
+const dataNavigation = [
+  { label: "Data Catalog", shortLabel: "Catalog" },
+  { label: "Data Operations", shortLabel: "Operations" },
+  { label: "Sources", shortLabel: "Sources" },
+  { label: "Signals", shortLabel: "Signals" },
 ];
 
 const domainCatalog = [
@@ -304,7 +308,7 @@ const reliabilityClass: Record<Reliability, string> = {
 };
 
 function ProductMark() {
-  return <div className="product-mark" aria-label="Market Intelligence"><span className="system-monogram">MI</span><span className="mark-copy"><strong>MARKET INTELLIGENCE</strong><small>EHS STRATEGY SYSTEM</small></span></div>;
+  return <div className="product-mark" aria-label="Market Intelligence"><span className="system-monogram">MI</span><span className="mark-copy"><strong>MARKET INTELLIGENCE</strong></span></div>;
 }
 
 function ReliabilityBadge({ value }: { value: Reliability }) {
@@ -415,6 +419,17 @@ export default function Home() {
   const selectedCompetitor = useMemo(() => competitors.find((competitor) => competitor.id === selectedCompetitorId) ?? competitors[0], [selectedCompetitorId]);
   const selectedJurisdiction = useMemo(() => jurisdictions.find((jurisdiction) => jurisdiction.code === selectedJurisdictionCode) ?? jurisdictions[0], [selectedJurisdictionCode]);
   const activeProductDomain = active === "Products" ? productDomains[selectedProductDomain] : null;
+  const isDataSection = dataNavigation.some((item) => item.label === active);
+  const supportsHeaderSearch = ["Data Catalog", "Regulations", "Sources"].includes(active);
+  const searchPlaceholder = active === "Regulations" ? "Search regulations, agencies or CFR references" : active === "Sources" ? "Search sources or coverage" : "Search data domains or source layers";
+  const visibleCatalogDomains = useMemo(() => {
+    const text = query.toLowerCase().trim();
+    return text ? domainCatalog.filter((item) => Object.values(item).join(" ").toLowerCase().includes(text)) : domainCatalog;
+  }, [query]);
+  const visibleSources = useMemo(() => {
+    const text = query.toLowerCase().trim();
+    return text ? sources.filter((source) => Object.values(source).join(" ").toLowerCase().includes(text)) : sources;
+  }, [query]);
   const focusedSegments = useMemo(() => marketSegments.filter((segment) => {
     const verticalMatch = selectedVertical === "All markets" || segment.vertical === selectedVertical;
     const segmentMatch = selectedSegment === "All segments" || segment.id === selectedSegment;
@@ -457,11 +472,14 @@ export default function Home() {
   const selected = filtered.find((record) => record.id === selectedId) ?? filtered[0] ?? allRecords[0];
 
   const selectNavigation = (label: string) => {
-    setActive(label);
-    if (label === "Competitors") setFocusMode("competitor");
-    if (label === "Markets") setFocusMode("market");
-    if (label !== "Sources") {
-      const first = allRecords.find((record) => label === "Data Catalog" || record.domain === label || (label === "Markets" && record.domain === "Industries") || (label === "Enforcement" && record.domain === "Enforcement & Injuries"));
+    if (label === "Sustainability" || label === "Contractor Management") setSelectedProductDomain(label);
+    const destination = label === "Data" ? "Data Catalog" : label === "Sustainability" || label === "Contractor Management" ? "Products" : label;
+    setActive(destination);
+    setQuery("");
+    if (destination === "Competitors") setFocusMode("competitor");
+    if (destination === "Markets") setFocusMode("market");
+    if (destination !== "Sources") {
+      const first = allRecords.find((record) => destination === "Data Catalog" || record.domain === destination || (destination === "Markets" && record.domain === "Industries") || (destination === "Enforcement" && record.domain === "Enforcement & Injuries"));
       if (first) setSelectedId(first.id);
     }
   };
@@ -523,16 +541,19 @@ export default function Home() {
     <main className="app-shell">
       <section className="workspace">
         <header className="app-header">
-          <div className="header-main"><ProductMark /><nav className="primary-nav" aria-label="Primary">{navigation.map(({ label, icon: Icon }) => <button key={label} className={active === label ? "nav-item active" : "nav-item"} onClick={() => selectNavigation(label)}><Icon size={14} strokeWidth={1.8} /><span>{label}</span></button>)}</nav><div className="header-user"><span>VN</span><small>Strategy</small></div></div>
-          <div className="topbar"><div className="search-wrap"><Search size={16} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search companies, NAICS, regulations, agencies, facilities, or evidence" /><kbd>⌘ K</kbd></div><div className="source-status"><span className={`system-pill ${feedStatus}`}><i /> Federal Register {feedStatus}</span><span className={`system-pill ${dataFeedStatus}`}><i /> Economic feeds {dataFeedStatus}</span><button onClick={() => selectNavigation("Sources")}>Source health <ArrowUpRight size={13} /></button></div><button className="export-button" onClick={exportRecord}><Download size={15} /> Export</button></div>
+          <div className="header-main"><ProductMark /><nav className="primary-nav" aria-label="Primary">{navigation.map(({ label, icon: Icon }, index) => <button key={label} data-accent={index % 4} className={(label === "Data" ? isDataSection : active === label) ? "nav-item active" : "nav-item"} onClick={() => selectNavigation(label)}><Icon size={14} strokeWidth={1.8} /><span>{label}</span></button>)}</nav></div>
+          <div className="topbar">
+            {isDataSection ? <nav className="section-nav" aria-label="Data areas">{dataNavigation.map((item) => <button className={active === item.label ? "active" : ""} onClick={() => selectNavigation(item.label)} key={item.label}>{item.shortLabel}</button>)}</nav> : <div className="active-path"><span>Active</span><b>{active}</b></div>}
+            {supportsHeaderSearch && <div className="search-wrap"><Search size={15} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={searchPlaceholder} /></div>}
+            <div className="source-status"><span className={`system-pill ${feedStatus}`}><i /> Rules {feedStatus}</span><span className={`system-pill ${dataFeedStatus}`}><i /> Markets {dataFeedStatus}</span><button onClick={() => selectNavigation("Sources")}>Sources <ArrowUpRight size={12} /></button></div><button className="export-button" onClick={exportRecord}><Download size={14} /> Export</button>
+          </div>
         </header>
 
         <div className={`content intelligence-content${active === "Competitors" ? " competitor-content" : active === "Injuries" ? " injury-content" : ""}`}>
-          <div className="demo-banner"><CircleDot size={13} /><b>Coverage notice</b> Live, mapped, licensed, and awaiting-access sources are labeled separately. No private records are included until explicitly approved.</div>
-          <section className="workspace-heading">
-            <div>{!["Competitors", "Injuries"].includes(active) && <span className="eyebrow"><FileSearch size={14} /> EVIDENCE-BACKED INTELLIGENCE</span>}<h1>{active === "Injuries" ? "Workplace Risk Intelligence" : active}</h1>{active !== "Injuries" && <p>{active === "Sources" ? "Inspect coverage, ownership, update method, and source health before trusting an output." : active === "Competitors" ? "Research competitors by product depth, messaging, customer evidence, corporate movement, and market relevance." : active === "Products" ? "Navigate sustainability and contractor-management intelligence without crowding the primary application navigation." : active === "Data Operations" ? "Control bulk imports, live connectors, schema contracts, freshness, and publication gates from one place." : active === "Enforcement" ? "Track inspections, citations, penalties, repeat visits, establishments, and agency activity separately from injury records." : active === "Corporate Activity" ? "Track transactions, ownership, leadership, product moves, and messaging changes without mixing facts with interpretation." : active === "Signals" ? "Review material changes across markets, hiring, regulations, competitors, enforcement, injuries, and corporate activity." : "Navigate connected evidence across markets, companies, regulations, enforcement, injuries, and economic signals."}</p>}</div>
+          {!["Competitors", "Injuries"].includes(active) && <section className="workspace-heading">
+            <div><h1>{active}</h1></div>
             {!["Competitors", "Injuries"].includes(active) && <div className="workspace-meta"><span><b>{active === "Sources" ? sources.length : active === "Data Operations" ? sourceRegistry.length : filtered.length}</b> {active === "Data Operations" ? "registered sources" : "records in view"}</span><button onClick={resetWorkspace}><RefreshCw size={14} /> Reset view</button></div>}
-          </section>
+          </section>}
 
           {active === "Data Operations" ? (
             <section className="data-operations">
@@ -583,7 +604,7 @@ export default function Home() {
               <div className="catalog-intro"><div><span className="panel-kicker">System of record</span><h2>Source catalog & coverage</h2></div><p>Connectors will fail quietly into the last successful snapshot, while freshness and coverage gaps remain visible here.</p></div>
               <div className="catalog-table">
                 <div className="catalog-row catalog-head"><span>Source</span><span>Type</span><span>Method</span><span>Coverage</span><span>Cadence</span><span>Status</span></div>
-                {sources.map((source) => <div className="catalog-row" key={source.name}><span><i><Database size={15} /></i><b>{source.name}</b><small>{source.owner}</small></span><span>{source.type}</span><span>{source.method}</span><span>{source.coverage}</span><span>{source.cadence}</span><span><mark className={source.status === "Ready" ? "ready" : source.status === "Mapped" ? "mapped" : "progress"}>{source.status}</mark></span></div>)}
+                {visibleSources.map((source) => <div className="catalog-row" key={source.name}><span><i><Database size={15} /></i><b>{source.name}</b><small>{source.owner}</small></span><span>{source.type}</span><span>{source.method}</span><span>{source.coverage}</span><span>{source.cadence}</span><span><mark className={source.status === "Ready" ? "ready" : source.status === "Mapped" ? "mapped" : "progress"}>{source.status}</mark></span></div>)}
               </div>
               <div className="coverage-policy"><ShieldCheck size={20} /><div><strong>Publication rule</strong><p>No unsourced claim is eligible for an executive brief, market view, competitor profile, or exported battlecard.</p></div><button>View quality rules <ArrowUpRight size={14} /></button></div>
             </section>
@@ -591,7 +612,7 @@ export default function Home() {
             <>
               {active === "Data Catalog" && <section className="data-catalog-home">
                 <div className="catalog-summary panel"><div><span className="panel-kicker">Cross-index architecture</span><h2>One evidence system, joined through governed dimensions</h2><p>The interface follows the data: every domain declares its record grain, stable keys, source authority, update cadence, and coverage boundary before analysis is allowed.</p></div><div className="index-state"><span><b>{domainCatalog.length}</b> governed domains</span><span><b>{sharedDimensions.length}</b> shared dimensions</span><span><b>{sourceRegistry.length}</b> source contracts</span></div></div>
-                <div className="catalog-table panel"><div className="catalog-table-row catalog-table-head"><span>Domain</span><span>Record grain</span><span>Join keys</span><span>Primary source layer</span><span>Cadence</span><span>Coverage</span></div>{domainCatalog.map((item) => <button className="catalog-table-row" key={item.domain} onClick={() => selectNavigation(item.domain)}><span><b>{item.domain}</b></span><span>{item.grain}</span><span><code>{item.keys}</code></span><span>{item.sources}</span><span>{item.cadence}</span><span>{item.coverage}<ChevronRight size={13} /></span></button>)}</div>
+                <div className="catalog-table panel"><div className="catalog-table-row catalog-table-head"><span>Domain</span><span>Record grain</span><span>Join keys</span><span>Primary source layer</span><span>Cadence</span><span>Coverage</span></div>{visibleCatalogDomains.map((item) => <button className="catalog-table-row" key={item.domain} onClick={() => selectNavigation(item.domain)}><span><b>{item.domain}</b></span><span>{item.grain}</span><span><code>{item.keys}</code></span><span>{item.sources}</span><span>{item.cadence}</span><span>{item.coverage}<ChevronRight size={13} /></span></button>)}</div>
                 <div className="dimension-register panel"><div className="dimension-register-heading"><span className="panel-kicker">Conformed dimensions</span><h2>Shared keys make every cross-section reproducible</h2><p>These hierarchies persist across tabs. Unknown mappings remain null and visible; they are never guessed into a category.</p></div><div className="dimension-register-list">{sharedDimensions.map((dimension) => <div key={dimension.name}><b>{dimension.name}</b><code>{dimension.hierarchy}</code><span>{dimension.use}</span></div>)}</div></div>
                 <div className="catalog-governance"><span><ShieldCheck size={14} /><b>Provenance required</b> source ID · source record ID · published/effective date · retrieved timestamp</span><span><RefreshCw size={14} /><b>Freshness explicit</b> cadence · last success · lag · revision status</span><span><Network size={14} /><b>Joins governed</b> exact · concordance · entity-resolved · unmatched</span><span><Info size={14} /><b>Denominators preserved</b> population and coverage shown with every rate</span></div>
               </section>}
@@ -617,8 +638,7 @@ export default function Home() {
                 {activeSegment && comparisonSegment && <div className="comparison-contract panel"><div className="contract-heading"><div><span className="panel-kicker">Publication eligibility</span><h2>Matched evidence contract</h2><p>Every analytical rate must declare its numerator, denominator, period, geography, ownership scope, and source coverage.</p></div><span><b>{comparisonChecks.filter((check) => check.status === "Eligible").length}</b> of {comparisonChecks.length} rates eligible</span></div><div className="contract-table"><div className="contract-row contract-head"><span>Measure</span><span>Numerator / denominator</span><span>Source & period</span><span>Coverage decision</span></div>{comparisonChecks.map((check) => <div className="contract-row" key={check.factor}><span><b>{check.factor}</b><small>{check.geography}</small></span><span><b>{check.numerator}</b><small>÷ {check.denominator}</small></span><span><b>{check.source}</b><small>{check.period}</small></span><span><mark className={check.status.toLowerCase()}>{check.status}</mark><small>{check.reason}</small></span></div>)}</div><div className="contract-rule"><ShieldCheck size={14} /><span><b>No silent substitution.</b> A broader NAICS proxy can provide directional context, but it cannot publish as an exact subsegment rate.</span></div></div>}
               </section>}
               {activeProductDomain && <section className="product-domain">
-                <nav className="product-domain-nav" aria-label="Product intelligence areas"><button className={selectedProductDomain === "Sustainability" ? "active" : ""} onClick={() => setSelectedProductDomain("Sustainability")}><Leaf size={15} /><span><b>Sustainability</b><small>Environmental, ESG and reporting intelligence</small></span></button><button className={selectedProductDomain === "Contractor Management" ? "active" : ""} onClick={() => setSelectedProductDomain("Contractor Management")}><Network size={15} /><span><b>Contractor Management</b><small>Prequalification, access and contractor risk</small></span></button></nav>
-                <div className="domain-brief panel"><div><span className="panel-kicker">Independent product intelligence domain</span><h2>{selectedProductDomain}</h2><p>This workspace has its own buyers, regulations, workflows, specialist competitors, evidence sources, and market signals. It is connected to core EHS intelligence without being collapsed into it.</p></div><div className="domain-status"><span><b>Mapped</b> domain model</span><span><b>Next</b> live connectors</span></div></div>
+                <nav className="product-domain-nav" aria-label="Product intelligence areas"><button className={selectedProductDomain === "Sustainability" ? "active" : ""} onClick={() => setSelectedProductDomain("Sustainability")}><Leaf size={15} /><b>Sustainability</b></button><button className={selectedProductDomain === "Contractor Management" ? "active" : ""} onClick={() => setSelectedProductDomain("Contractor Management")}><Network size={15} /><b>Contractor Management</b></button></nav>
                 <div className="domain-grid"><div className="panel"><span className="section-label">Questions this domain must answer</span>{activeProductDomain.questions.map((question) => <button key={question}>{question}<ArrowRight size={13} /></button>)}</div><div className="panel"><span className="section-label">Specialist competitor set</span><div className="domain-tags">{activeProductDomain.competitors.map((competitor) => <button key={competitor} onClick={() => { const profile = competitors.find((item) => item.name === competitor); if (profile) openCompetitor(profile.id); }}>{competitor}<ChevronRight size={12} /></button>)}</div></div><div className="panel"><span className="section-label">Required evidence layers</span>{activeProductDomain.evidence.map((item) => <span className="evidence-line" key={item}><CircleDot size={11} />{item}</span>)}</div></div>
                 <div className="domain-roadmap panel"><ShieldCheck size={16} /><span><b>Trust boundary</b> No market-strength, capability-depth, or regulatory-coverage claim will publish from marketing copy alone. Every claim requires an identified source, retrieval date, evidence class, and review status.</span></div>
               </section>}
@@ -663,8 +683,7 @@ export default function Home() {
             </>
           )}
         </div>
-        {active !== "Sources" && <section className={`context-rail${contextOpen ? " open" : ""}`}>
-          <button className="context-rail-toggle" onClick={() => setContextOpen((current) => !current)} aria-expanded={contextOpen}><PanelsTopLeft size={13} /><span>Context</span><b>{focusMode === "competitor" ? `${selectedCompetitor.name} · ` : ""}{selectedVertical}</b><small>{selectedSegment !== "All segments" ? marketSegments.find((segment) => segment.id === selectedSegment)?.segment : selectedGeography}</small><ChevronRight className={contextOpen ? "open" : ""} size={13} /></button>
+        <section className={`context-rail${contextOpen ? " open" : ""}`}>
           {contextOpen && <div className="context-rail-controls">
             <label>Lens<select value={focusMode} onChange={(event) => event.target.value === "competitor" ? openCompetitor(selectedCompetitorId) : setFocusMode("market")}><option value="market">Market</option><option value="competitor">Competitor</option></select></label>
             {focusMode === "competitor" && <label>Competitor<select value={selectedCompetitorId} onChange={(event) => openCompetitor(event.target.value)}>{competitors.map((competitor) => <option value={competitor.id} key={competitor.id}>{competitor.name}</option>)}</select></label>}
@@ -672,7 +691,8 @@ export default function Home() {
             <label>Segment<select value={selectedSegment} onChange={(event) => setSelectedSegment(event.target.value)}><option value="All segments">All segments</option>{marketSegments.filter((segment) => selectedVertical === "All markets" || segment.vertical === selectedVertical).map((segment) => <option value={segment.id} key={segment.id}>{segment.segment}</option>)}</select></label>
             <label>Geography<select value={selectedGeography} onChange={(event) => setSelectedGeography(event.target.value)}><option>North America</option><option>United States</option><option>State</option><option>Metro</option><option>Facility / project</option></select></label>
           </div>}
-        </section>}
+          <div className="context-rail-summary"><span><small>Active</small><b>{active}</b></span><span><small>Context</small><b>{focusMode === "competitor" ? selectedCompetitor.name : selectedVertical}</b></span><span><small>Detail</small><b>{selectedSegment !== "All segments" ? marketSegments.find((segment) => segment.id === selectedSegment)?.segment : "All segments"}</b></span><span><small>Geography</small><b>{selectedGeography}</b></span><button className="context-rail-toggle" onClick={() => setContextOpen((current) => !current)} aria-expanded={contextOpen}><PanelsTopLeft size={13} /> Adjust <ChevronRight className={contextOpen ? "open" : ""} size={13} /></button></div>
+        </section>
       </section>
     </main>
   );
