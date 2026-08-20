@@ -29,12 +29,11 @@ import {
   deepCompetitorIntelligence,
   inferDomains,
   novaraBaseline,
-  sourcePolicies,
   type CompetitorIntelligence,
 } from "./competitor-intelligence";
 import { marketSegments } from "./market-data";
 
-type WorkspaceTab = "Command center" | "Products" | "Evidence" | "Activity" | "Compare" | "Battle card" | "Intelligence inbox";
+type WorkspaceTab = "Overview" | "Product depth" | "Messaging & change" | "Customers & reviews" | "Corporate" | "Sales brief" | "Compare" | "Intelligence inbox";
 type IntakeRecord = { id: string; competitorId: string; title: string; sourceType: string; sourceUrl: string; excerpt: string; tags: string[]; markets: string[]; modules: string[]; createdAt: string; status: "Needs review" };
 type ContextBrief = { subject: string; markets: string[]; modules: string[]; competitors: CompetitorProfile[]; caveat: string };
 type UploadDraft = { name: string; text: string; characters: number; error?: string };
@@ -42,13 +41,13 @@ type SourceScan = { scannedAt: string; pages: Array<{ url: string; title?: strin
 type PublicationFeed = { refreshedAt: string; sources: Array<{ name: string; url: string; tier: string; status: string; error?: string; articles: Array<{ title: string; url: string; themes: string[] }> }> };
 
 const tabs: Array<{ label: WorkspaceTab; description: string }> = [
-  { label: "Command center", description: "Position, strengths and pressure points" },
-  { label: "Products", description: "Modules, domains and proof gaps" },
-  { label: "Evidence", description: "Customers, reviews and sources" },
-  { label: "Activity", description: "Product, AI and corporate changes" },
+  { label: "Overview", description: "Position, strengths and markets" },
+  { label: "Product depth", description: "Workflows, depth and watchouts" },
+  { label: "Messaging & change", description: "Message house and movement" },
+  { label: "Customers & reviews", description: "Outcomes and user patterns" },
+  { label: "Corporate", description: "Strategy, deals and hiring" },
+  { label: "Sales brief", description: "Why they win and how to compete" },
   { label: "Compare", description: "Cross-competitor capability matrix" },
-  { label: "Battle card", description: "Sales-ready evidence and questions" },
-  { label: "Intelligence inbox", description: "Upload and route new evidence" },
 ];
 const sourceTypes = ["Field note", "Call or event transcript", "Comparative quote", "Pricing evidence", "Analyst briefing", "Public website", "Review or forum observation"];
 const languageFrames: Array<[string, string[]]> = [
@@ -98,7 +97,8 @@ function moduleGroup(module: string) {
 }
 
 export function CompetitorWorkspace({ selectedCompetitorId, onSelectCompetitor, onOpenMarket }: { selectedCompetitorId: string; onSelectCompetitor: (id: string) => void; onOpenMarket: (market: string) => void }) {
-  const [activeTab, setActiveTab] = useState<WorkspaceTab>("Command center");
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>("Overview");
+  const [showAllCompetitors, setShowAllCompetitors] = useState(false);
   const [archetype, setArchetype] = useState("All archetypes");
   const [domain, setDomain] = useState("All capabilities");
   const [competitorQuery, setCompetitorQuery] = useState("");
@@ -199,7 +199,7 @@ export function CompetitorWorkspace({ selectedCompetitorId, onSelectCompetitor, 
 
   useEffect(() => {
     setSourceScan(null); setScanStatus("");
-    if (activeTab !== "Activity") return;
+    if (activeTab !== "Messaging & change") return;
     void refreshOfficialSources();
     void refreshPublicationFeed();
     const timer = window.setInterval(() => { void refreshOfficialSources(); void refreshPublicationFeed(); }, 15 * 60 * 1000);
@@ -224,45 +224,39 @@ export function CompetitorWorkspace({ selectedCompetitorId, onSelectCompetitor, 
 
   return <section className="ci-suite">
     <div className="ci-scope-rail panel">
-      <div className="ci-suite-title"><span className="panel-kicker">Competitor suite</span><b>{researchCount} researched competitors · official sources monitored</b></div>
+      <div className="ci-suite-title"><b>Competitors</b><span>{researchCount} researched companies</span></div>
       <label><Search size={13} /><input value={competitorQuery} onChange={(event) => setCompetitorQuery(event.target.value)} placeholder="Company, module, market, message" /></label>
       <select value={archetype} onChange={(event) => setArchetype(event.target.value)}>{competitorArchetypes.map((item) => <option key={item}>{item}</option>)}</select>
       <select aria-label="Selected competitor" value={selectedCompetitor.id} onChange={(event) => onSelectCompetitor(event.target.value)}>{selectorCompetitors.map((competitor) => <option value={competitor.id} key={competitor.id}>{competitor.name}</option>)}</select>
-      <span className="ci-result-count"><b>{visibleCompetitors.length}</b> in scope</span>
+      <button className="ci-all-button" onClick={() => setShowAllCompetitors((current) => !current)}>{showAllCompetitors ? "Close roster" : `All competitors (${visibleCompetitors.length})`}</button>
     </div>
 
     <div className="ci-domain-rail" aria-label="Competitor capability filters">
       {competitorDomains.map((item) => <button className={domain === item ? "active" : ""} onClick={() => setDomain(item)} key={item}>{item}<small>{item === "All capabilities" ? competitors.length : competitors.filter((competitor) => (deepCompetitorIntelligence[competitor.id]?.domains ?? inferDomains(competitor.modules, competitor.messagingTags)).includes(item)).length}</small></button>)}
     </div>
 
-    <div className="ci-company-strip" aria-label="Competitors in scope">
-      {visibleCompetitors.slice(0, 12).map((competitor) => {
+    <div className={showAllCompetitors ? "ci-company-strip expanded" : "ci-company-strip"} aria-label="Competitors in scope">
+      {visibleCompetitors.map((competitor) => {
         const deep = deepCompetitorIntelligence[competitor.id];
-        return <button className={selectedCompetitor.id === competitor.id ? "selected" : ""} onClick={() => onSelectCompetitor(competitor.id)} key={competitor.id}>
+        return <button className={selectedCompetitor.id === competitor.id ? "selected" : ""} onClick={() => { onSelectCompetitor(competitor.id); setShowAllCompetitors(false); }} key={competitor.id}>
           <span className="ci-mini-logo"><img src={faviconFor(competitor.officialUrl)} alt="" onError={(event) => { event.currentTarget.style.display = "none"; }} />{competitor.name.slice(0, 2).toUpperCase()}</span>
-          <span><b>{competitor.name}</b><small>{deep ? "Researched" : "Source map"} · {competitor.modules.length} modules</small></span>
+          <span><b>{competitor.name}</b><small>{deep?.buyingMotion ?? competitor.archetype}</small></span>
           <ChevronRight size={12} />
         </button>;
       })}
-      {visibleCompetitors.length > 12 && <span className="ci-more-companies">+{visibleCompetitors.length - 12} available in selector</span>}
     </div>
 
     <div className="ci-profile-header panel">
       <div className="ci-company-mark"><img src={faviconFor(selectedCompetitor.officialUrl)} alt="" onError={(event) => { event.currentTarget.style.display = "none"; }} /><Building2 size={18} /></div>
-      <div><span className="panel-kicker">{selectedCompetitor.archetype} · {intelligence?.researchStatus ?? "Source map only"}</span><h2>{selectedCompetitor.name}</h2><p>{selectedCompetitor.statedPositioning}</p></div>
-      <div className="ci-profile-facts">
-        <span><b>{posture.tier}</b><small>Market tier</small></span>
-        <span><b>{selectedCompetitor.modules.length}</b><small>Mapped modules</small></span>
-        <span><b>{intelligence?.sources.length ?? selectedCompetitor.monitoredSurfaces.length + 1}</b><small>Sourced surfaces</small></span>
-        <a href={selectedCompetitor.officialUrl} target="_blank" rel="noreferrer"><ExternalLink size={13} /> Official site</a>
-      </div>
+      <div><span className="panel-kicker">{selectedCompetitor.archetype}</span><h2>{selectedCompetitor.name}</h2><p>{intelligence?.buyingMotion ?? selectedCompetitor.statedPositioning}</p></div>
+      <div className="ci-profile-actions"><button onClick={() => setShowAllCompetitors(true)}>Switch competitor</button><button onClick={() => setActiveTab("Intelligence inbox")}><UploadCloud size={12} /> Add intelligence</button><a href={selectedCompetitor.officialUrl} target="_blank" rel="noreferrer"><ExternalLink size={13} /> Official site</a></div>
     </div>
 
     <nav className="ci-tabs" aria-label="Competitor workspace sections">
-      {tabs.map((tab) => <button className={activeTab === tab.label ? "active" : ""} key={tab.label} onClick={() => setActiveTab(tab.label)}><b>{tab.label}</b><small>{tab.description}</small>{tab.label === "Intelligence inbox" && selectedIntake.length > 0 && <mark>{selectedIntake.length}</mark>}</button>)}
+      {tabs.map((tab) => <button className={activeTab === tab.label ? "active" : ""} key={tab.label} onClick={() => setActiveTab(tab.label)}><b>{tab.label}</b><small>{tab.description}</small></button>)}
     </nav>
 
-    {activeTab === "Command center" && <div className="ci-command-grid">
+    {activeTab === "Overview" && <div className="ci-command-grid">
       <article className="panel ci-decision-room">
         <header><div><span className="section-label">Decision view</span><h2>Why {selectedCompetitor.name} matters</h2></div><mark>{intelligence ? `Reviewed ${intelligence.sources[0]?.observedAt ?? selectedCompetitor.retrieved}` : "Research required"}</mark></header>
         <div className="ci-decision-columns">
@@ -270,32 +264,35 @@ export function CompetitorWorkspace({ selectedCompetitorId, onSelectCompetitor, 
           <section><span className="ci-section-icon"><AlertTriangle size={14} /></span><b>Pressure points to test</b>{(intelligence?.pressurePoints ?? [{ signal: "Pricing, implementation, module depth and customer outcomes have not been researched.", boundary: "Unknown, not a verified weakness." }]).map((item) => <details key={item.signal}><summary>{item.signal}</summary><p>{item.boundary}</p></details>)}</section>
           <section><span className="ci-section-icon"><Bot size={14} /></span><b>AI posture</b><div className="ci-ai-card"><strong>{intelligence?.ai.label ?? (selectedDomains.includes("AI") ? "AI referenced" : "No researched AI position")}</strong><p>{intelligence?.ai.summary ?? "A source-specific AI research pass is required before comparison."}</p>{intelligence?.ai.capabilities.map((capability) => <mark key={capability}>{capability}</mark>)}{intelligence?.ai.sourceUrl && <a href={intelligence.ai.sourceUrl} target="_blank" rel="noreferrer">Open AI source <ArrowUpRight size={11} /></a>}</div></section>
         </div>
-        <footer><ShieldCheck size={14} /><span><b>Evidence rule:</b> weakness claims remain questions until corroborated. Company statements, vendor case studies, reviews and internal evidence stay visibly separate.</span></footer>
       </article>
 
       <aside className="panel ci-company-facts"><span className="section-label">Company and market</span><div><span><small>Motion</small><b>{posture.motion}</b></span><span><small>Headquarters</small><b>{intelligence?.headquarters ?? "Research required"}</b></span><span><small>Founded</small><b>{intelligence?.founded ?? "Research required"}</b></span><span><small>Strong contexts</small><b>{posture.strength}</b></span></div><span className="section-label">Capability domains</span><div className="ci-tag-cloud">{selectedDomains.map((item) => <button key={item} onClick={() => setDomain(item)}>{item}</button>)}</div></aside>
 
-      <aside className="panel ci-market-map"><span className="section-label">Market intersections</span>{selectedCompetitor.marketRelevance.map((market) => { const segments = marketSegments.filter((segment) => segment.vertical === market); return <button onClick={() => onOpenMarket(market)} key={market}><Factory size={14} /><span><b>{market}</b><small>{segments.length} mapped segments</small></span><ChevronRight size={13} /></button>; })}</aside>
+      <aside className="panel ci-market-map"><span className="section-label">Industries with evidence</span>{(intelligence?.industries ?? selectedCompetitor.marketRelevance).map((market) => { const matchedVertical = marketSegments.find((segment) => segment.vertical.toLowerCase().includes(market.toLowerCase()) || market.toLowerCase().includes(segment.vertical.toLowerCase()))?.vertical; const segments = matchedVertical ? marketSegments.filter((segment) => segment.vertical === matchedVertical) : []; return <button onClick={() => matchedVertical && onOpenMarket(matchedVertical)} key={market}><Factory size={14} /><span><b>{market}</b><small>{segments.length ? `${segments.length} navigable segments` : "Customer or product evidence mapped"}</small></span>{matchedVertical && <ChevronRight size={13} />}</button>; })}</aside>
 
-      <article className="panel ci-source-gate"><header><div><span className="section-label">Source governance</span><h2>What can enter the system</h2></div><button onClick={() => setActiveTab("Evidence")}>View evidence <ArrowRight size={12} /></button></header><div>{sourcePolicies.slice(0, 5).map((policy) => <span key={policy.source}><i className={policy.decision.includes("Approved") ? "approved" : "conditional"} /><b>{policy.source}</b><small>{policy.decision}</small></span>)}</div><footer><LockKeyhole size={13} /> Internal battle cards are intentionally excluded from the public deployment bundle.</footer></article>
+      <article className="panel ci-workflow-map"><header><div><span className="section-label">Workflow footprint</span><h2>Where this competitor is relevant</h2></div></header><div>{(intelligence?.productDepth ?? selectedCompetitor.modules.map((module) => ({ family: module, depth: "Baseline only" as const, buyerUse: moduleGroup(module) }))).map((item) => <button key={item.family} onClick={() => setActiveTab("Product depth")}><span><b>{item.family}</b><small>{item.depth}</small></span><p>{item.buyerUse}</p><ArrowRight size={12} /></button>)}</div></article>
     </div>}
 
-    {activeTab === "Products" && <div className="ci-product-layout">
-      <article className="panel ci-module-map"><header><div><span className="panel-kicker">Product map</span><h2>Module → domain → proof status</h2></div><mark>Company-stated baseline</mark></header><div className="ci-module-table"><div><span>Module</span><span>Capability domain</span><span>Evidence</span><span>Next diligence</span></div>{selectedCompetitor.modules.map((module) => <article key={module}><b>{module}</b><span>{moduleGroup(module)}</span><span><Check size={11} /> Official source mapped</span><button onClick={() => { setActiveTab("Intelligence inbox"); setIntakeTitle(`${module} workflow evidence`); }}>Add proof <ArrowRight size={11} /></button></article>)}</div><footer><Info size={14} /> A module name does not prove workflow depth, packaging, offline availability, integration quality or customer adoption.</footer></article>
-      <aside className="panel ci-overlap-card"><span className="section-label">Public comparison basis</span><h2>Novara overlap</h2><p>{overlap.length} likely module intersections based on public naming. This is routing—not a feature-parity claim.</p><div>{overlap.map((item) => <span key={item}><CircleDot size={10} />{item}</span>)}</div><a href={novaraBaseline.sourceUrl} target="_blank" rel="noreferrer">Open Novara baseline <ArrowUpRight size={11} /></a></aside>
+    {activeTab === "Product depth" && <div className="ci-product-layout">
+      <article className="panel ci-depth-review"><header><div><span className="panel-kicker">Product depth</span><h2>What the product actually supports</h2></div><mark>{intelligence?.productDepth?.length ?? selectedCompetitor.modules.length} product areas</mark></header><div>{(intelligence?.productDepth ?? selectedCompetitor.modules.map((module) => ({ family: module, depth: "Baseline only" as const, workflows: [module], buyerUse: `Supports ${module.toLowerCase()} workflows.`, assessment: "Official product naming is mapped; workflow depth has not yet completed the pilot-level research pass.", watchouts: ["Validate workflow depth", "Confirm packaging and implementation"], sourceUrl: selectedCompetitor.officialUrl }))).map((item) => <article key={item.family}><header><span><small>{moduleGroup(item.family)}</small><h3>{item.family}</h3></span><mark>{item.depth}</mark></header><p>{item.assessment}</p><div className="ci-depth-columns"><section><b>Key workflows</b>{item.workflows.map((workflow) => <span key={workflow}><Check size={11} />{workflow}</span>)}</section><section><b>Buyer use</b><p>{item.buyerUse}</p></section><section><b>What to validate</b>{item.watchouts.map((watchout) => <span key={watchout}><Search size={11} />{watchout}</span>)}</section></div><a href={item.sourceUrl} target="_blank" rel="noreferrer">Primary product source <ArrowUpRight size={11} /></a></article>)}</div></article>
+      <aside className="panel ci-overlap-card"><span className="section-label">Competitive overlap</span><h2>Relevant Novara conversations</h2><p>{overlap.length} product areas share public naming. Use the detailed workflow evidence—not module names—to prepare a comparison.</p><div>{overlap.map((item) => <span key={item}><CircleDot size={10} />{item}</span>)}</div><button onClick={() => setActiveTab("Sales brief")}>Open sales brief <ArrowRight size={11} /></button></aside>
     </div>}
 
-    {activeTab === "Evidence" && <div className="ci-evidence-workspace">
-      <article className="panel ci-proof-panel"><header><div><span className="section-label">Named customer proof</span><h2>Outcomes with attribution boundaries</h2></div><mark>{intelligence?.customerProof.length ?? 0} mapped</mark></header>{intelligence?.customerProof.length ? intelligence.customerProof.map((proof) => <details open key={proof.customer}><summary><span><b>{proof.customer}</b><small>{proof.industry}</small></span><ArrowUpRight size={12} /></summary><p>{proof.outcome}</p><small>{proof.caveat}</small><a href={proof.sourceUrl} target="_blank" rel="noreferrer">Open case study</a></details>) : <div className="ci-empty"><FileSearch size={18} /><b>No named proof mapped yet</b><span>Official case studies and outcome attribution require a research pass.</span></div>}</article>
-      <article className="panel ci-review-panel"><header><div><span className="section-label">Review signals</span><h2>Directional—not dispositive</h2></div><mark>{intelligence?.reviewSignals.length ?? 0} sources</mark></header>{intelligence?.reviewSignals.length ? intelligence.reviewSignals.map((review) => <div key={review.platform}><span><b>{review.platform}</b><strong>{review.score}</strong><small>{review.sample}</small></span><p>{review.themes.map((theme) => <mark key={theme}>{theme}</mark>)}</p><small>{review.caveat}</small><a href={review.sourceUrl} target="_blank" rel="noreferrer">Open review source <ArrowUpRight size={11} /></a></div>) : <div className="ci-empty"><Search size={18} /><b>No governed review sample yet</b><span>Review collection remains link-only until platform licensing and sampling rules are approved.</span></div>}</article>
-      <article className="panel ci-source-register"><header><div><span className="section-label">Evidence register</span><h2>Current public source chain</h2></div><mark>{intelligence?.sources.length ?? selectedCompetitor.monitoredSurfaces.length + 1} sources</mark></header>{(intelligence?.sources ?? selectedCompetitor.monitoredSurfaces.map((surface) => ({ label: surface.label, url: surface.url, tier: "Primary" as const, purpose: "Official source monitoring", observedAt: selectedCompetitor.retrieved, caveat: "Company statement." }))).map((source) => <a href={source.url} target="_blank" rel="noreferrer" key={source.label}><span className={`ci-tier ${source.tier.toLowerCase().replace(" ", "-")}`}>{source.tier}</span><span><b>{source.label}</b><small>{source.purpose}</small></span><span><small>Observed</small><b>{source.observedAt}</b></span><p>{source.caveat}</p><ArrowUpRight size={12} /></a>)}</article>
-      <article className="panel ci-policy-table"><header><span className="section-label">Collection decisions requiring approval</span><h2>Source policy</h2></header>{sourcePolicies.map((policy) => <details key={policy.source}><summary><span><b>{policy.source}</b><small>{policy.decision}</small></span><ChevronRight size={12} /></summary><p><b>Use:</b> {policy.use}</p><p><b>Boundary:</b> {policy.boundary}</p></details>)}</article>
+    {activeTab === "Customers & reviews" && <div className="ci-evidence-workspace">
+      <article className="panel ci-proof-panel"><header><div><span className="section-label">Customer outcomes</span><h2>Where customers use it and what changed</h2></div><mark>{intelligence?.customerProof.length ?? 0} case studies</mark></header>{intelligence?.customerProof.length ? intelligence.customerProof.map((proof) => <details open key={proof.customer}><summary><span><b>{proof.customer}</b><small>{proof.industry}</small></span><ArrowUpRight size={12} /></summary><p>{proof.outcome}</p><small>{proof.caveat}</small><a href={proof.sourceUrl} target="_blank" rel="noreferrer">Read the case study <ArrowUpRight size={10} /></a></details>) : <div className="ci-empty"><FileSearch size={18} /><b>No named customer study mapped yet</b><span>This competitor is queued for the same case-study research used in the VelocityEHS pilot.</span></div>}</article>
+      <article className="panel ci-review-panel"><header><div><span className="section-label">Customer review pattern</span><h2>What users consistently praise and question</h2></div><mark>{intelligence?.reviewSignals.length ?? 0} review sets</mark></header>{intelligence?.reviewSignals.length ? intelligence.reviewSignals.map((review) => <div key={review.platform}><span><b>{review.platform}</b><strong>{review.score}</strong><small>{review.sample}</small></span><div className="ci-review-themes">{review.themes.map((theme) => <span key={theme}><CircleDot size={10} />{theme}</span>)}</div><small>{review.caveat}</small><a href={review.sourceUrl} target="_blank" rel="noreferrer">Inspect the review set <ArrowUpRight size={11} /></a></div>) : <div className="ci-empty"><Search size={18} /><b>No review pattern mapped yet</b><span>Reviews will appear here as synthesized themes with sample and collection caveats—not as a source registry.</span></div>}</article>
     </div>}
 
-    {activeTab === "Activity" && <div className="ci-activity-layout">
+    {activeTab === "Messaging & change" && <div className="ci-activity-layout">
+      <article className="panel ci-message-analysis"><header><div><span className="section-label">Current message house</span><h2>{intelligence?.messaging?.headline ?? selectedCompetitor.platform}</h2></div><a href={intelligence?.messaging?.sourceUrl ?? selectedCompetitor.officialUrl} target="_blank" rel="noreferrer">Current source <ArrowUpRight size={11} /></a></header><p className="ci-message-promise">{intelligence?.messaging?.promise ?? selectedCompetitor.statedPositioning}</p><div>{(intelligence?.messaging?.pillars ?? currentTags.map((tag) => ({ label: tag, evidence: "Current official messaging tag; detailed evidence is queued for the next research pass." }))).map((pillar) => <section key={pillar.label}><b>{pillar.label}</b><p>{pillar.evidence}</p></section>)}</div><footer><b>What changed</b><p>{intelligence?.messaging?.changeSummary ?? "A dated message-change baseline has not yet completed the pilot-level research pass."}</p></footer></article>
       <article className="panel ci-activity-stream"><header><div><span className="section-label">Change timeline</span><h2>Material product and company movement</h2></div><mark>{intelligence?.activity.length ?? 0} researched events</mark></header>{intelligence?.activity.length ? intelligence.activity.map((event) => <div key={`${event.date}-${event.title}`}><i /><span><small>{event.date} · {event.type}</small><b>{event.title}</b><p>{event.summary}</p></span><a href={event.sourceUrl} target="_blank" rel="noreferrer">Evidence <ArrowUpRight size={11} /></a></div>) : <div className="ci-empty"><Radar size={18} /><b>Baseline only</b><span>Newsroom, release-note and help-center monitoring has not completed its first research pass.</span></div>}{selectedIntake.map((record) => <div className="pending" key={record.id}><i /><span><small>{record.createdAt.slice(0, 10)} · {record.sourceType}</small><b>{record.title}</b><p>{record.tags.length ? `Detected frames: ${record.tags.join(", ")}` : "No controlled linguistic frame detected."}</p></span><mark>{record.status}</mark></div>)}</article>
       <aside className="panel ci-monitor-plan"><span className="section-label">Official-source refresh</span><button onClick={refreshOfficialSources} disabled={scanStatus.startsWith("Refreshing")}><RefreshCw size={12} /> Refresh {selectedCompetitor.name}</button><small className="ci-live-status">{scanStatus || `${selectedCompetitor.monitoredSurfaces.length + (intelligence?.sources.length ?? 1)} approved surfaces ready`}</small>{sourceScan ? sourceScan.pages.map((page) => <a className={page.error ? "unavailable" : ""} href={page.url} target="_blank" rel="noreferrer" key={page.url}><Radar size={13} /><span><b>{page.title || new URL(page.url).hostname}</b><small>{page.error || page.signals?.join(" · ") || "Official source refreshed"}</small></span><ArrowUpRight size={11} /></a>) : selectedCompetitor.monitoredSurfaces.map((surface) => <a href={surface.url} target="_blank" rel="noreferrer" key={surface.label}><Radar size={13} /><span><b>{surface.label}</b><small>Approved official website</small></span><ArrowUpRight size={11} /></a>)}<div><ShieldCheck size={13} /><p>Only the competitor’s approved official domains are scanned. Results are live observations—not independent proof.</p></div></aside>
       <article className="panel ci-publication-feed"><header><div><span className="section-label">External EHS signal layer</span><h2>Agencies and major industry publications</h2></div><button onClick={refreshPublicationFeed} disabled={feedStatus.startsWith("Refreshing")}><FileSearch size={12} /> Refresh market watch</button></header><small className="ci-live-status">{feedStatus || "OSHA, MSHA, EHS Today, Safety+Health and EHS Daily Advisor ready"}</small>{publicationFeed ? <div>{publicationFeed.sources.map((source) => <section key={source.name}><span><b>{source.name}</b><small>{source.tier} · {source.status}</small></span>{source.articles.slice(0, 5).map((article) => <a href={article.url} target="_blank" rel="noreferrer" key={article.url}><b>{article.title}</b><small>{article.themes.join(" · ") || "EHS market signal"}</small><ArrowUpRight size={11} /></a>)}{!source.articles.length && <small>{source.error || "No current article links detected."}</small>}</section>)}</div> : <div className="ci-feed-ready"><FileSearch size={18} /><b>Live web refresh is ready</b><span>Pull current headlines directly into the intelligence workspace instead of waiting for uploads.</span></div>}</article>
+    </div>}
+
+    {activeTab === "Corporate" && <div className="ci-corporate-layout">
+      <article className="panel ci-corporate-signals"><header><div><span className="section-label">Corporate movement</span><h2>Strategy, transactions and ecosystem</h2></div></header>{(intelligence?.corporateSignals ?? intelligence?.activity ?? []).map((signal) => <section key={`${signal.date}-${signal.title}`}><small>{signal.date} · {signal.type}</small><h3>{signal.title}</h3><p>{signal.summary}</p><a href={signal.sourceUrl} target="_blank" rel="noreferrer">Source <ArrowUpRight size={10} /></a></section>)}{!intelligence?.corporateSignals?.length && !intelligence?.activity.length && <div className="ci-empty"><Building2 size={18} /><b>No corporate signal set mapped yet</b><span>This company is queued for ownership, transaction, leadership and partnership research.</span></div>}</article>
+      <article className="panel ci-hiring-signals"><header><div><span className="section-label">Hiring signals</span><h2>Where the organization is adding capacity</h2></div></header>{intelligence?.hiringSignals?.length ? intelligence.hiringSignals.map((signal) => <section key={`${signal.function}-${signal.signal}`}><small>{signal.function} · observed {signal.observedAt}</small><h3>{signal.signal}</h3><p>{signal.interpretation}</p><a href={signal.sourceUrl} target="_blank" rel="noreferrer">Official careers source <ArrowUpRight size={10} /></a></section>) : <div className="ci-empty"><Search size={18} /><b>No current hiring signal mapped</b><span>Only dated, official career pages will appear here; isolated postings will not be treated as proof of strategy.</span></div>}</article>
     </div>}
 
     {activeTab === "Compare" && <div className="ci-compare-workspace">
@@ -303,9 +300,9 @@ export function CompetitorWorkspace({ selectedCompetitorId, onSelectCompetitor, 
       <article className="panel ci-compare-matrix"><header><div><span className="section-label">Capability landscape</span><h2>Cross-competitor public evidence</h2></div><mark>{comparisonCompetitors.length} selected</mark></header><div className="ci-matrix-row head"><span>Capability</span>{comparisonCompetitors.map((competitor) => <span key={competitor.id}>{competitor.name}</span>)}</div>{comparisonDomains.map((capability) => <div className="ci-matrix-row" key={capability}><b>{capability}</b>{comparisonCompetitors.map((competitor) => { const domains = deepCompetitorIntelligence[competitor.id]?.domains ?? inferDomains(competitor.modules, competitor.messagingTags); return <span className={domains.includes(capability) ? "mapped" : "unknown"} key={competitor.id}>{domains.includes(capability) ? <><Check size={11} /> Mapped</> : "Not mapped"}</span>; })}</div>)}<footer><ShieldCheck size={13} /> “Mapped” means public evidence exists for the domain. It does not establish feature parity, quality, packaging or customer adoption.</footer></article>
     </div>}
 
-    {activeTab === "Battle card" && <div className="ci-battlecard-layout">
-      <article className="panel ci-battlecard-main"><header><div><span className="section-label">Evidence-gated battle card</span><h2>{selectedCompetitor.name}</h2></div><button onClick={exportBattlecard}><Download size={13} /> Export Markdown</button></header><div className="ci-battlecard-grid"><section><b>Why they win</b>{(intelligence?.whyTheyWin ?? []).map((item) => <span key={item.claim}><Check size={11} />{item.claim}</span>)}{!intelligence && <span><Info size={11} />Research pass required.</span>}</section><section><b>How Novara can compete</b>{novaraBaseline.strengths.slice(0, 4).map((item) => <span key={item}><ArrowRight size={11} />Lead with proof of {item.toLowerCase()} when relevant.</span>)}</section><section><b>Questions to expose fit</b>{(intelligence?.questionsToTest ?? ["Which workflows, integrations and services are non-negotiable?", "What must work offline and across sites?", "What is included in the current package?"]).map((item) => <span key={item}><Search size={11} />{item}</span>)}</section><section><b>Claims not approved</b>{(intelligence?.pressurePoints ?? []).map((item) => <span key={item.signal}><AlertTriangle size={11} />{item.signal}</span>)}<small>Pressure points remain questions until public, review, field or product evidence is approved.</small></section></div><footer><LockKeyhole size={13} /> Internal battle-card claims are not included because the current deployment is public. Connect authenticated storage before publishing confidential positioning.</footer></article>
-      <aside className="panel ci-message-house"><span className="section-label">Current message house</span><h2>{selectedCompetitor.platform}</h2><p>{selectedCompetitor.statedPositioning}</p><div className="message-tags">{currentTags.map((tag) => <span key={tag}>{tag}</span>)}</div><span className="section-label">Novara public baseline</span><p>{novaraBaseline.boundary}</p><a href={novaraBaseline.sourceUrl} target="_blank" rel="noreferrer">Review baseline <ArrowUpRight size={11} /></a></aside>
+    {activeTab === "Sales brief" && <div className="ci-battlecard-layout">
+      <article className="panel ci-battlecard-main"><header><div><span className="section-label">Sales brief</span><h2>{selectedCompetitor.name}</h2></div><button onClick={exportBattlecard}><Download size={13} /> Export battle card</button></header><div className="ci-battlecard-grid"><section><b>Why they win</b>{(intelligence?.whyTheyWin ?? []).map((item) => <span key={item.claim}><Check size={11} />{item.claim}</span>)}{!intelligence && <span><Info size={11} />Research pass required.</span>}</section><section><b>How Novara can compete</b>{novaraBaseline.strengths.slice(0, 4).map((item) => <span key={item}><ArrowRight size={11} />Lead with proof of {item.toLowerCase()} when relevant.</span>)}</section><section><b>Questions to expose fit</b>{(intelligence?.questionsToTest ?? ["Which workflows, integrations and services are non-negotiable?", "What must work offline and across sites?", "What is included in the current package?"]).map((item) => <span key={item}><Search size={11} />{item}</span>)}</section><section><b>Pressure points to validate</b>{(intelligence?.pressurePoints ?? []).map((item) => <span key={item.signal}><AlertTriangle size={11} />{item.signal}</span>)}<small>Use these as discovery questions until corroborated; do not present them as proven weaknesses.</small></section></div></article>
+      <aside className="panel ci-message-house"><span className="section-label">Fast positioning read</span><h2>{intelligence?.messaging?.headline ?? selectedCompetitor.platform}</h2><p>{intelligence?.messaging?.promise ?? selectedCompetitor.statedPositioning}</p><div className="message-tags">{currentTags.map((tag) => <span key={tag}>{tag}</span>)}</div><button onClick={() => setActiveTab("Messaging & change")}>Open messaging analysis <ArrowRight size={11} /></button></aside>
     </div>}
 
     {activeTab === "Intelligence inbox" && <div className="ci-intake-layout">
@@ -314,13 +311,5 @@ export function CompetitorWorkspace({ selectedCompetitorId, onSelectCompetitor, 
       <article className="panel ci-review-queue"><header><div><span className="panel-kicker">Local review queue</span><h2>{selectedCompetitor.name} contributions</h2></div><mark>{selectedIntake.length} pending</mark></header>{selectedIntake.length ? selectedIntake.map((record) => <div key={record.id}><span><small>{record.createdAt.slice(0, 10)} · {record.sourceType}</small><b>{record.title}</b><p>{record.excerpt}</p><i>{unique([...record.tags, ...record.markets, ...record.modules]).map((tag) => <mark key={tag}>{tag}</mark>)}</i></span><mark>{record.status}</mark></div>) : <div className="ci-empty"><UploadCloud size={18} /><b>No contributed intelligence yet</b><span>Uploads stay in this browser only until authenticated shared evidence storage is connected.</span></div>}</article>
     </div>}
 
-    <div className="ci-status-rail">
-      <span><small>Scope</small><b>{domain}</b></span>
-      <span><small>Selected</small><b>{selectedCompetitor.name}</b></span>
-      <span><small>Research</small><b>{intelligence?.researchStatus ?? "Source map only"}</b></span>
-      <span><small>Evidence</small><b>{intelligence?.sources.length ?? selectedCompetitor.monitoredSurfaces.length + 1} public sources</b></span>
-      <span className="locked"><LockKeyhole size={12} /><small>Internal evidence</small><b>Excluded from public build</b></span>
-      <button onClick={exportBattlecard}><Download size={12} /> Export public-safe card</button>
-    </div>
   </section>;
 }
