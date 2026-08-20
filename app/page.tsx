@@ -543,7 +543,7 @@ export default function Home() {
               </section>}
               {active === "Competitors" && <>
                 <section className="competitor-workspace">
-                  <div className="competitor-toolbar panel"><div><span className="panel-kicker">Competitive landscape</span><b>{competitors.length} official-source profiles</b></div><label>Archetype<select value={competitorArchetype} onChange={(event) => setCompetitorArchetype(event.target.value)}>{competitorArchetypes.map((item) => <option key={item}>{item}</option>)}</select></label></div>
+                  <div className="competitor-toolbar panel"><div><span className="panel-kicker">Competitive landscape</span><b>{competitors.length} official-source profiles</b></div><label>Archetype<select value={competitorArchetype} onChange={(event) => { const nextArchetype = event.target.value; setCompetitorArchetype(nextArchetype); const firstVisible = competitors.find((competitor) => nextArchetype === "All archetypes" || competitor.archetype === nextArchetype); if (firstVisible) setSelectedCompetitorId(firstVisible.id); }}>{competitorArchetypes.map((item) => <option key={item}>{item}</option>)}</select></label></div>
                   <div className="competitor-entry-grid">
                     {visibleCompetitors.map((competitor) => <button className={selectedCompetitor.id === competitor.id ? "competitor-entry selected" : "competitor-entry"} key={competitor.id} onClick={() => openCompetitor(competitor.id)}><span><i><Building2 size={16} /></i><ReliabilityBadge value={competitor.reliability} /></span><h2>{competitor.name}</h2><p>{competitor.platform}</p><footer>{competitor.archetype}<ChevronRight size={14} /></footer></button>)}
                   </div>
