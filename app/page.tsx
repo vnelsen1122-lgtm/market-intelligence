@@ -30,14 +30,22 @@ import {
   Sparkles,
   UploadCloud,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import { buildComparisonChecks } from "./comparison-contracts";
 import { competitors } from "./competitor-data";
-import { CompetitorWorkspace } from "./competitor-workspace";
 import { changeContract, corporateSourceHierarchy, messagingTaxonomy, monitoringJobs } from "./corporate-data";
 import { jurisdictionCounts, jurisdictions } from "./jurisdiction-data";
 import { marketSegments, verticals, type MarketSegment } from "./market-data";
 import { importContract, sourceRegistry } from "./source-registry";
+
+const CompetitorWorkspace = dynamic(
+  () => import("./competitor-workspace").then((module) => module.CompetitorWorkspace),
+  {
+    ssr: false,
+    loading: () => <section className="panel loading-state">Loading the competitor intelligence suite…</section>,
+  },
+);
 
 type Reliability = "Verified Fact" | "Company Statement" | "Analyst Inference" | "Source Structure";
 
