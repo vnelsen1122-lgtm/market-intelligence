@@ -18,6 +18,24 @@ export type CompetitorIntelligence = {
   founded?: string;
   marketTier: string;
   buyingMotion: string;
+  productDepth?: Array<{
+    family: string;
+    depth: "Specialist depth" | "Broad workflow coverage" | "Adjacent capability" | "Baseline only";
+    workflows: string[];
+    buyerUse: string;
+    assessment: string;
+    watchouts: string[];
+    sourceUrl: string;
+  }>;
+  messaging?: {
+    headline: string;
+    promise: string;
+    pillars: Array<{ label: string; evidence: string }>;
+    changeSummary: string;
+    sourceUrl: string;
+  };
+  corporateSignals?: Array<{ date: string; type: string; title: string; summary: string; sourceUrl: string }>;
+  hiringSignals?: Array<{ function: string; signal: string; interpretation: string; sourceUrl: string; observedAt: string }>;
   whyTheyWin: Array<{ claim: string; basis: string; sourceUrl: string }>;
   pressurePoints: Array<{ signal: string; boundary: string }>;
   ai: {
@@ -85,6 +103,28 @@ export const deepCompetitorIntelligence: Record<string, CompetitorIntelligence> 
     founded: "1996",
     marketTier: "Mid-market to global enterprise",
     buyingMotion: "Broad EHS platform with specialist depth in ergonomics and chemical management",
+    productDepth: [
+      { family: "Safety", depth: "Broad workflow coverage", workflows: ["Incident management", "Investigations and root-cause analysis", "Audits and inspections", "Observations", "Corrective actions", "Safety meetings", "Training and learning"], buyerUse: "Standardize frontline reporting, investigations, actions and recurring safety work across sites.", assessment: "A broad safety system rather than a single incident-recording tool. The public product map connects capture, investigation, action management and learning workflows.", watchouts: ["Confirm OSHA recordability configuration by geography", "Test cross-module navigation and field workflow steps", "Validate offline behavior by workflow"], sourceUrl: "https://www.ehs.com/solution/safety/" },
+      { family: "Chemical Management", depth: "Specialist depth", workflows: ["SDS management", "Chemical inventory", "GHS secondary labeling", "Ingredient indexing", "Regulatory reporting", "Emergency response"], buyerUse: "Control chemical inventories and hazard communication while maintaining accessible SDS and reporting records.", assessment: "One of VelocityEHS's clearest specialist positions, extending beyond SDS storage into inventory, labels, ingredient data and reporting.", watchouts: ["Validate SDS update timing", "Confirm regulatory-content coverage by country", "Test synchronization across locations and modules"], sourceUrl: "https://www.ehs.com/accelerate/" },
+      { family: "Ergonomics", depth: "Specialist depth", workflows: ["Industrial ergonomics", "Office ergonomics", "3D motion-capture assessment", "3DSSPP analysis", "Controls and improvement tracking"], buyerUse: "Identify ergonomic risk, prioritize controls and show injury and cost movement over time.", assessment: "A differentiated specialist franchise supported by computer-vision tooling, consulting heritage and multiple quantified customer stories.", watchouts: ["Separate software effect from broader program change", "Confirm assessment hardware and service requirements", "Validate coverage for non-routine work"], sourceUrl: "https://www.ehs.com/accelerate/" },
+      { family: "Operational Risk", depth: "Specialist depth", workflows: ["Hazard studies", "Bowtie analysis", "JSA and JHA", "Management of change", "Control verification", "Risk dashboards"], buyerUse: "Model major hazards, connect critical controls and manage operational change in high-hazard environments.", assessment: "Deeper than conventional EHS action tracking and relevant to process safety, energy, chemicals and complex manufacturing buyers.", watchouts: ["Confirm integration between risk studies and frontline execution", "Validate facilitator and services dependence", "Test reporting across inherited data models"], sourceUrl: "https://www.ehs.com/solution/operational-risk/" },
+      { family: "Contractor Safety & Permit to Work", depth: "Broad workflow coverage", workflows: ["Contractor onboarding", "Qualification", "Permit to work", "Site access", "Contractor performance"], buyerUse: "Control contractor eligibility and hazardous work before and during site access.", assessment: "The OneLook acquisition added permit-to-work and contractor-management depth to the broader Accelerate portfolio.", watchouts: ["Confirm network versus site-owned data model", "Validate permit workflow configuration", "Assess contractor adoption outside managed sites"], sourceUrl: "https://www.ehs.com/press_releases/velocityehs-adds-innovative-permit-to-work-and-contractor-management-capabilities-with-acquisition-of-onelook-systems/" },
+      { family: "Environmental Compliance", depth: "Broad workflow coverage", workflows: ["Permit obligations", "Compliance tasks", "Environmental reporting", "Air, water and waste records"], buyerUse: "Track obligations and evidence across regulated facilities and reporting periods.", assessment: "A named Accelerate solution family with shared workflow positioning; detailed jurisdictional content depth requires module-level validation.", watchouts: ["Confirm included regulatory content", "Validate calculation and filing workflows", "Assess jurisdiction coverage"], sourceUrl: "https://www.ehs.com/accelerate/" },
+      { family: "Sustainability", depth: "Broad workflow coverage", workflows: ["ESG data collection", "GHG accounting", "Performance reporting", "Multi-site sustainability management"], buyerUse: "Collect and report sustainability data alongside EHS operations.", assessment: "Positioned as part of the connected platform, but buyers should validate calculation libraries, assurance controls and disclosure-specific workflows.", watchouts: ["Confirm emissions-factor governance", "Validate audit trail and assurance support", "Check disclosure framework coverage"], sourceUrl: "https://www.ehs.com/accelerate/" },
+      { family: "Industrial Hygiene", depth: "Broad workflow coverage", workflows: ["Exposure assessment", "Sampling plans", "Similar exposure groups", "Medical and monitoring records"], buyerUse: "Manage occupational exposure programs and recurring industrial-hygiene work.", assessment: "A distinct solution family that strengthens VelocityEHS in regulated manufacturing and high-exposure environments.", watchouts: ["Confirm lab and device integrations", "Validate statistical analysis depth", "Assess occupational-health handoffs"], sourceUrl: "https://www.ehs.com/accelerate/" },
+    ],
+    messaging: {
+      headline: "One platform. One intelligence. One assistant.",
+      promise: "Move from risk to resolution faster by connecting EHS workflows, data and AI in the Accelerate platform.",
+      pillars: [
+        { label: "Speed", evidence: "Current platform language repeatedly emphasizes speed, reduced administrative work and faster movement from detection to action." },
+        { label: "Connected platform", evidence: "Accelerate is presented as a shared experience across eight solution families rather than a collection of isolated tools." },
+        { label: "Human-centered intelligence", evidence: "VelocityAI is framed as intelligence embedded in the flow of EHS work, with Velo as the interaction layer." },
+        { label: "Practical outcomes", evidence: "Case studies foreground injury reduction, multi-site standardization and operational efficiency rather than abstract transformation." },
+      ],
+      changeSummary: "The message has shifted from broad EHS platform consolidation toward an AI-led three-layer story: Accelerate as the work layer, VelocityAI as the intelligence layer and Velo as the assistant.",
+      sourceUrl: "https://www.ehs.com/accelerate/",
+    },
     whyTheyWin: [
       { claim: "Recognized enterprise EHS brand with broad connected-platform coverage.", basis: "VelocityEHS states that Accelerate serves more than 10 million workers and spans eight solution families.", sourceUrl: "https://www.ehs.com/accelerate/" },
       { claim: "Specialist differentiation in ergonomics and chemical management.", basis: "The current platform lists 3D motion capture, ergonomics controls, SDS, inventory, labeling and regulatory reporting capabilities.", sourceUrl: "https://www.ehs.com/accelerate/" },
@@ -97,20 +137,37 @@ export const deepCompetitorIntelligence: Record<string, CompetitorIntelligence> 
     ],
     ai: { label: "VelocityAI + Velo", summary: "A company-described intelligence layer and embedded assistant across Accelerate.", capabilities: ["3D motion capture", "Predictive incident analytics", "PSIF insights", "Pattern detection", "In-flow guidance"], sourceUrl: "https://www.ehs.com/press_releases/velocityehs-introduces-velocityai/" },
     customerProof: [
-      { customer: "Johnson Matthey", industry: "Chemical manufacturing", outcome: "Published ergonomics case study describes use of AI motion capture within a broader ergonomics program.", sourceUrl: "https://www.ehs.com/wp-content/uploads/2025/06/VelocityEHS_Case-Study_Johnson-Matthey.pdf", caveat: "Vendor-published case study; isolate the measured outcome before comparative use." },
+      { customer: "Johnson Matthey", industry: "Chemical manufacturing", outcome: "Vendor case study reports a 97% reduction in recordable ergonomic injuries over five years using Industrial Ergonomics within a broader program.", sourceUrl: "https://www.ehs.com/wp-content/uploads/2025/06/VelocityEHS_Case-Study_Johnson-Matthey.pdf", caveat: "Vendor-published outcome; program, process and software effects are not independently isolated." },
+      { customer: "Hitachi Energy", industry: "Energy equipment manufacturing", outcome: "Vendor success story reports a 95% reduction in neck and back injury incidence using Industrial Ergonomics.", sourceUrl: "https://www.ehs.com/success-stories/", caveat: "Vendor-selected case-study result; validate measurement period and program scope before comparison." },
+      { customer: "Komatsu Mining Technologies", industry: "Mining equipment manufacturing", outcome: "The current success story describes one safety system supporting more than 150 sites and a global operating model.", sourceUrl: "https://www.ehs.com/success-stories/", caveat: "Vendor-published account of adoption and scale; implementation effort and active-module coverage are not independently verified." },
+      { customer: "Porter Logistics", industry: "Logistics and regulated materials", outcome: "The case study describes replacement of spreadsheet-based chemical work with Chemical Management as the company expanded into regulated customer environments.", sourceUrl: "https://www.ehs.com/case-studies/porter-logistics/", caveat: "Vendor-published qualitative outcome; no independent ROI measure is provided." },
+      { customer: "Biomedical device manufacturer", industry: "Medical device manufacturing", outcome: "The success story describes contractor-safety process improvement, time savings and lower administrative cost.", sourceUrl: "https://www.ehs.com/success-stories/", caveat: "Customer is unnamed and outcomes are vendor-published; use as workflow evidence, not market proof." },
     ],
     reviewSignals: [
-      { platform: "G2", score: "4.4 / 5", sample: "172 seller-profile reviews", themes: ["Broad category presence", "Self-assessment and access themes", "Mixed collection sources"], sourceUrl: "https://www.g2.com/sellers/velocityehs", caveat: "Observed 2026-08-19. Seller profile spans 14 categories and includes incentivized or seller-invited reviews; analyze product-level cohorts before using themes." },
+      { platform: "G2", score: "4.4 / 5", sample: "155 product reviews", themes: ["Ease of use is the dominant positive theme", "Centralized safety, chemical and compliance records", "Useful dashboards and recurring-action tracking", "Navigation can feel confusing or fragmented", "Some workflows feel rigid or require extra steps", "Support response and OSHA-recordability setup appear as diligence themes"], sourceUrl: "https://www.g2.com/products/velocityehs-ehs-software-to-outpace-risk/reviews", caveat: "Observed 2026-08-20. G2 reports verified identities, but the visible sample includes seller-invited and incentivized reviews. Treat themes as directional and segment by module and reviewer context." },
     ],
     activity: [
       { date: "2025-08-21", type: "AI launch", title: "VelocityAI introduced", summary: "VelocityEHS announced a unified intelligence engine embedded in Accelerate.", sourceUrl: "https://www.ehs.com/press_releases/velocityehs-introduces-velocityai/" },
       { date: "2025-01-29", type: "Platform", title: "Accelerate integration expanded", summary: "The company announced a more unified experience across its major solution families.", sourceUrl: "https://www.ehs.com/press-releases/velocityehs-launches-the-industrys-first-fully-integrated-ehs-platform-to-revolutionize-workplace-safety-and-risk-management/" },
+      { date: "2025-07-01", type: "AI product", title: "AI PSIF Insights added to Incident Management", summary: "VelocityEHS launched an AI feature intended to identify potential serious-injury and fatality precursors within incident workflows.", sourceUrl: "https://www.ehs.com/press_releases/velocityehs-launches-new-psif-ai-to-identify-the-next-serious-injury-or-fatality-before-it-happens/" },
+      { date: "2025-01-14", type: "Partnership", title: "Ergonomics services partnership expanded", summary: "A partnership with Sandalwood added specialist services around Industrial Ergonomics deployments.", sourceUrl: "https://www.ehs.com/press_releases/velocityehs-continues-its-mission-to-reduce-workplace-injuries-by-establishing-new-ergonomics-partner/" },
+    ],
+    corporateSignals: [
+      { date: "2025-08-21", type: "Strategy", title: "AI becomes the platform-level growth narrative", summary: "VelocityAI and Velo connect the portfolio under a common intelligence and assistant story rather than positioning AI as an isolated feature.", sourceUrl: "https://www.ehs.com/press_releases/velocityehs-introduces-velocityai/" },
+      { date: "2025-01-14", type: "Partner ecosystem", title: "Services capacity added around ergonomics", summary: "The Sandalwood partnership indicates continued investment in implementation and expert support around a differentiated product franchise.", sourceUrl: "https://www.ehs.com/press_releases/velocityehs-continues-its-mission-to-reduce-workplace-injuries-by-establishing-new-ergonomics-partner/" },
+      { date: "2021-05-12", type: "Acquisition", title: "OneLook Systems acquired", summary: "The acquisition added permit-to-work and contractor-management capabilities and established a stronger control-of-work position.", sourceUrl: "https://www.ehs.com/press_releases/velocityehs-adds-innovative-permit-to-work-and-contractor-management-capabilities-with-acquisition-of-onelook-systems/" },
+    ],
+    hiringSignals: [
+      { function: "Go-to-market enablement", signal: "GTM Communication & Enablement Manager listed on the official careers page", interpretation: "Supports investment in more consistent commercial narrative, field readiness and launch communication; it does not by itself establish growth rate.", sourceUrl: "https://www.ehs.com/about-us/careers/open-positions/", observedAt: "2026-08-20" },
+      { function: "Enterprise sales", signal: "Global Enterprise Account Manager and Enterprise Account Manager roles listed", interpretation: "Consistent with continued enterprise-account coverage and upmarket selling capacity; open-role counts are a point-in-time signal only.", sourceUrl: "https://www.ehs.com/about-us/careers/open-positions/", observedAt: "2026-08-20" },
     ],
     questionsToTest: ["Which Accelerate modules are native versus separately packaged?", "What implementation and services are required by module?", "Which AI capabilities are generally available versus limited release?", "How strong is offline support for each frontline workflow?", "How do chemical-list volume and module count affect pricing?"],
     sources: [
       { label: "Accelerate platform", url: "https://www.ehs.com/accelerate/", tier: "Primary", purpose: "Current platform, modules and positioning", observedAt, caveat: "Company statement." },
       { label: "VelocityAI announcement", url: "https://www.ehs.com/press_releases/velocityehs-introduces-velocityai/", tier: "Primary", purpose: "AI launch and named capabilities", observedAt, caveat: "Company announcement." },
       { label: "G2 seller profile", url: "https://www.g2.com/sellers/velocityehs", tier: "Review signal", purpose: "Rating, sample and directional experience themes", observedAt, caveat: "Multiple categories and collection methods." },
+      { label: "VelocityEHS success stories", url: "https://www.ehs.com/success-stories/", tier: "Vendor proof", purpose: "Named customers, industries and stated outcomes", observedAt, caveat: "Vendor-selected customer evidence." },
+      { label: "VelocityEHS careers", url: "https://www.ehs.com/about-us/careers/open-positions/", tier: "Primary", purpose: "Point-in-time hiring signals", observedAt, caveat: "Open roles change and do not prove strategy or performance alone." },
     ],
   },
   cority: {
