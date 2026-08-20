@@ -1,6 +1,8 @@
-# Novara Market Intelligence
+# Market Intelligence
 
-Push One establishes the application shell and executive-facing experience for a future internal market, compliance, enforcement, sustainability, and competitive intelligence system.
+An evidence-backed internal system for EHS market, compliance, enforcement, injury, sustainability, contractor-management, corporate, and competitive intelligence.
+
+The application is organized around governed dimensions—NAICS, organization, geography, time, authority, and product—so records can be cross-indexed without losing source lineage or coverage boundaries.
 
 ## Safety boundaries
 
