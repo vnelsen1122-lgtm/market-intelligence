@@ -22,6 +22,14 @@ const qcewSegments = [
   { id: "electric-power", label: "Electric power", naics: "2211", fileCode: "2211" },
   { id: "water", label: "Water, sewage & other systems", naics: "2213", fileCode: "2213" },
   { id: "waste", label: "Waste management & remediation", naics: "562", fileCode: "562" },
+  { id: "concrete", label: "Poured concrete structure contractors", naics: "238110", fileCode: "238110" },
+  { id: "electrical-contractors", label: "Electrical contractors", naics: "238210", fileCode: "238210" },
+  { id: "food-manufacturing", label: "Food manufacturing", naics: "311", fileCode: "311" },
+  { id: "semiconductors", label: "Semiconductor manufacturing", naics: "334413", fileCode: "334413" },
+  { id: "oil-gas-support", label: "Support activities for oil & gas", naics: "213112", fileCode: "213112" },
+  { id: "solar-generation", label: "Solar electric power generation", naics: "221114", fileCode: "221114" },
+  { id: "hazardous-waste", label: "Waste treatment & disposal", naics: "5622", fileCode: "5622" },
+  { id: "remediation", label: "Remediation services", naics: "562910", fileCode: "562910" },
 ];
 
 function parseCsvRow(row: string) {
