@@ -8,7 +8,6 @@ import {
   Building2,
   Calculator,
   Check,
-  ChevronDown,
   ChevronRight,
   CircleDot,
   Database,
@@ -22,7 +21,6 @@ import {
   HardHat,
   Info,
   Leaf,
-  Menu,
   Network,
   PanelsTopLeft,
   Radar,
@@ -31,7 +29,6 @@ import {
   ShieldCheck,
   Sparkles,
   UploadCloud,
-  X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { competitorArchetypes, competitors } from "./competitor-data";
@@ -96,23 +93,48 @@ type IntelligenceFeed = {
 };
 
 const navigation = [
-  { label: "Navigator", icon: Radar },
-  { label: "Industries", icon: Factory },
-  { label: "Enforcement & Injuries", icon: HardHat },
-  { label: "Regulations", icon: BookOpenCheck },
+  { label: "Intelligence Index", icon: Radar },
+  { label: "Markets", icon: Factory },
   { label: "Competitors", icon: Building2 },
+  { label: "Regulations", icon: BookOpenCheck },
+  { label: "Enforcement", icon: ShieldCheck },
+  { label: "Injuries", icon: HardHat },
   { label: "Sustainability", icon: Leaf },
+  { label: "Contractor Management", icon: Network },
   { label: "Corporate Activity", icon: Network },
+  { label: "Signals", icon: Sparkles },
   { label: "Data Operations", icon: UploadCloud },
   { label: "Sources", icon: Database },
 ];
+
+const questionPathways = [
+  { question: "Have there been mergers or ownership changes?", target: "Corporate Activity", evidence: "Filings · official releases · transaction reporting", icon: Network },
+  { question: "Is this industry growing or contracting?", target: "Markets", evidence: "Employment · establishments · payroll · output", icon: BarChart3 },
+  { question: "Are employers hiring EHS talent here?", target: "Signals", evidence: "Open roles · skills · employers · geography", icon: Building2 },
+  { question: "Which regulations affect this segment?", target: "Regulations", evidence: "Applicability · effective dates · obligations", icon: BookOpenCheck },
+  { question: "Where is compliance pressure highest?", target: "Enforcement", evidence: "Inspections · citations · penalties · repeat visits", icon: ShieldCheck },
+  { question: "How does injury density compare?", target: "Injuries", evidence: "Events · equipment · outcomes · denominators", icon: HardHat },
+];
+
+const productDomains = {
+  Sustainability: {
+    questions: ["Which reporting and environmental obligations apply?", "Where is buyer demand increasing?", "Which vendors lead by industry?", "What claims and modules have changed?"],
+    competitors: ["Sphera", "Cority", "Enablon", "Intelex", "EcoOnline", "VelocityEHS"],
+    evidence: ["Federal and state regulation", "EPA compliance data", "Company product evidence", "Reporting frameworks", "Market and hiring signals"],
+  },
+  "Contractor Management": {
+    questions: ["Which markets have the highest contractor dependence?", "How are contractors prequalified and monitored?", "Which vendors own each workflow?", "Where do safety and supply-chain risk converge?"],
+    competitors: ["ISNetworld", "Avetta", "Highwire", "HammerTech", "SALUS", "EcoOnline"],
+    evidence: ["Contractor risk and safety", "Prequalification workflows", "Insurance and financial risk", "Site access and training", "Industry-specific regulation"],
+  },
+};
 
 const records: IntelligenceRecord[] = [
   {
     id: "reg-heat-001",
     domain: "Regulations",
     title: "Heat Injury and Illness Prevention rulemaking",
-    summary: "A source-traceable regulatory record designed to connect rulemaking activity to affected industries, operating conditions, and applicable Novara capabilities.",
+    summary: "A source-traceable regulatory record designed to connect rulemaking activity to affected industries, operating conditions, and relevant product workflows.",
     industries: ["Construction", "Manufacturing", "Energy & Utilities"],
     geographies: ["United States"],
     agencies: ["OSHA", "Department of Labor"],
@@ -150,7 +172,7 @@ const records: IntelligenceRecord[] = [
     id: "market-qcew-001",
     domain: "Industries",
     title: "Employment and establishment growth by NAICS and geography",
-    summary: "A market record structure for comparing employment, wages, establishment counts, and location quotients across Novara-priority segments.",
+    summary: "A market record structure for comparing employment, wages, establishment counts, and location quotients across priority EHS segments.",
     industries: ["Construction", "Manufacturing", "Mining", "Utilities", "Waste & Water"],
     geographies: ["United States", "State", "County", "Metro"],
     agencies: ["Bureau of Labor Statistics"],
@@ -242,7 +264,7 @@ const reliabilityClass: Record<Reliability, string> = {
 };
 
 function ProductMark() {
-  return <div className="product-mark" aria-label="Novara Intelligence"><span className="mark-glyph"><i /><i /><i /></span><span className="mark-copy"><strong>NOVARA</strong><small>INTELLIGENCE</small></span></div>;
+  return <div className="product-mark" aria-label="Market Intelligence"><span className="system-monogram">MI</span><span className="mark-copy"><strong>MARKET INTELLIGENCE</strong><small>EHS STRATEGY SYSTEM</small></span></div>;
 }
 
 function ReliabilityBadge({ value }: { value: Reliability }) {
@@ -250,12 +272,11 @@ function ReliabilityBadge({ value }: { value: Reliability }) {
 }
 
 export default function Home() {
-  const [active, setActive] = useState("Navigator");
+  const [active, setActive] = useState("Intelligence Index");
   const [selectedId, setSelectedId] = useState(records[0].id);
   const [query, setQuery] = useState("");
   const [industry, setIndustry] = useState("All industries");
   const [reliability, setReliability] = useState("All reliability");
-  const [menuOpen, setMenuOpen] = useState(false);
   const [liveRecords, setLiveRecords] = useState<IntelligenceRecord[]>([]);
   const [feedStatus, setFeedStatus] = useState<"loading" | "live" | "degraded">("loading");
   const [selectedVertical, setSelectedVertical] = useState("All markets");
@@ -319,6 +340,7 @@ export default function Home() {
   const allRecords = useMemo(() => [...liveRecords, ...records], [liveRecords]);
   const selectedCompetitor = useMemo(() => competitors.find((competitor) => competitor.id === selectedCompetitorId) ?? competitors[0], [selectedCompetitorId]);
   const visibleCompetitors = useMemo(() => competitors.filter((competitor) => competitorArchetype === "All archetypes" || competitor.archetype === competitorArchetype), [competitorArchetype]);
+  const activeProductDomain = productDomains[active as keyof typeof productDomains];
   const focusedSegments = useMemo(() => marketSegments.filter((segment) => {
     const verticalMatch = selectedVertical === "All markets" || segment.vertical === selectedVertical;
     const segmentMatch = selectedSegment === "All segments" || segment.id === selectedSegment;
@@ -355,7 +377,10 @@ export default function Home() {
   const filtered = useMemo(() => {
     const text = query.toLowerCase().trim();
     return allRecords.filter((record) => {
-      const domainMatch = ["Navigator", "Sources"].includes(active) || record.domain === active;
+      const domainMatch = ["Intelligence Index", "Sources", "Signals"].includes(active)
+        || (active === "Markets" && record.domain === "Industries")
+        || (active === "Enforcement" && record.domain === "Enforcement & Injuries")
+        || record.domain === active;
       const competitorMarkets = focusMode === "competitor" ? selectedCompetitor.marketRelevance : verticals;
       const focusVertical = selectedVertical === "All markets" ? competitorMarkets : [selectedVertical];
       const crossSectionMarket = focusVertical.some((vertical) => record.industries.includes(vertical)) || record.industries.includes("All priority industries") || record.industries.includes("Requires applicability review") || record.domain === "Competitors";
@@ -371,9 +396,8 @@ export default function Home() {
   const selectNavigation = (label: string) => {
     setActive(label);
     if (label === "Competitors") setFocusMode("competitor");
-    setMenuOpen(false);
     if (label !== "Sources") {
-      const first = allRecords.find((record) => label === "Navigator" || record.domain === label);
+      const first = allRecords.find((record) => label === "Intelligence Index" || record.domain === label || (label === "Markets" && record.domain === "Industries") || (label === "Enforcement" && record.domain === "Enforcement & Injuries"));
       if (first) setSelectedId(first.id);
     }
   };
@@ -382,7 +406,7 @@ export default function Home() {
     setFocusMode("market");
     setSelectedVertical(vertical);
     setSelectedSegment(segmentId ?? "All segments");
-    setActive("Industries");
+    setActive("Markets");
     const relatedRecord = allRecords.find((record) => record.domain === "Industries" || record.industries.includes(vertical));
     if (relatedRecord) setSelectedId(relatedRecord.id);
   };
@@ -430,34 +454,25 @@ export default function Home() {
 
   return (
     <main className="app-shell">
-      <aside className={menuOpen ? "sidebar open" : "sidebar"}>
-        <div className="sidebar-top"><ProductMark /><button className="mobile-close" onClick={() => setMenuOpen(false)} aria-label="Close navigation"><X size={19} /></button></div>
-        <nav className="primary-nav" aria-label="Primary">
-          {navigation.map(({ label, icon: Icon }) => <button key={label} className={active === label ? "nav-item active" : "nav-item"} onClick={() => selectNavigation(label)}><Icon size={18} strokeWidth={1.8} /><span>{label}</span>{label === "Sources" && <span className="nav-count">7</span>}</button>)}
-        </nav>
-        <div className="sidebar-brief"><span className="eyebrow inverse"><Sparkles size={13} /> TRUST MODEL</span><p>Every claim retains its source, retrieval date, method, and reliability class.</p><button onClick={() => selectNavigation("Sources")}>Review source policy <ArrowRight size={14} /></button></div>
-        <div className="sidebar-footer"><div className="avatar">VN</div><div><strong>Vanessa Nelsen</strong><span>Strategy workspace</span></div><ChevronDown size={15} /></div>
-      </aside>
-
       <section className="workspace">
-        <header className="topbar">
-          <button className="mobile-menu" onClick={() => setMenuOpen(true)} aria-label="Open navigation"><Menu size={21} /></button>
-          <div className="search-wrap"><Search size={17} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search claims, agencies, companies, NAICS, or geography" /><kbd>⌘ K</kbd></div>
-          <div className="topbar-actions"><span className={`system-pill ${feedStatus}`}><span /> {feedStatus === "live" ? "Federal Register live" : feedStatus === "degraded" ? "Using source snapshot" : "Checking sources"}</span><button className="export-button" onClick={exportRecord}><Download size={16} /> Export record</button></div>
+        <header className="app-header">
+          <div className="header-main"><ProductMark /><nav className="primary-nav" aria-label="Primary">{navigation.map(({ label, icon: Icon }) => <button key={label} className={active === label ? "nav-item active" : "nav-item"} onClick={() => selectNavigation(label)}><Icon size={14} strokeWidth={1.8} /><span>{label}</span></button>)}</nav><div className="header-user"><span>VN</span><small>Strategy</small></div></div>
+          <div className="topbar"><div className="search-wrap"><Search size={16} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search companies, NAICS, regulations, agencies, facilities, or evidence" /><kbd>⌘ K</kbd></div><div className="source-status"><span className={`system-pill ${feedStatus}`}><i /> Federal Register {feedStatus}</span><span className={`system-pill ${dataFeedStatus}`}><i /> Economic feeds {dataFeedStatus}</span><button onClick={() => selectNavigation("Sources")}>Source health <ArrowUpRight size={13} /></button></div><button className="export-button" onClick={exportRecord}><Download size={15} /> Export</button></div>
         </header>
 
         <div className="content intelligence-content">
-          <div className="demo-banner"><CircleDot size={14} /> Architecture preview — source structures and selected public records only. No Ocean data or uploaded private records are included.</div>
-          {active !== "Sources" && <section className={`focus-context ${focusMode}`}>
-            <div className="focus-mode"><span><PanelsTopLeft size={14} /> Current focus</span><button className={focusMode === "market" ? "active" : ""} onClick={() => setFocusMode("market")}>Market</button><button className={focusMode === "competitor" ? "active" : ""} onClick={() => openCompetitor(selectedCompetitorId)}>Competitor</button></div>
+          <div className="demo-banner"><CircleDot size={13} /><b>Coverage notice</b> Live, mapped, licensed, and awaiting-access sources are labeled separately. No private records are included until explicitly approved.</div>
+          {active !== "Sources" && <section className="focus-context">
+            <span className="context-label"><PanelsTopLeft size={13} /> CONTEXT</span>
+            <label>Lens<select value={focusMode} onChange={(event) => event.target.value === "competitor" ? openCompetitor(selectedCompetitorId) : setFocusMode("market")}><option value="market">Market</option><option value="competitor">Competitor</option></select></label>
             {focusMode === "competitor" && <label>Competitor<select value={selectedCompetitorId} onChange={(event) => openCompetitor(event.target.value)}>{competitors.map((competitor) => <option value={competitor.id} key={competitor.id}>{competitor.name}</option>)}</select></label>}
             <label>Market<select value={selectedVertical} onChange={(event) => { setSelectedVertical(event.target.value); setSelectedSegment("All segments"); }}><option>All markets</option>{(focusMode === "competitor" ? verticals.filter((vertical) => selectedCompetitor.marketRelevance.includes(vertical)) : verticals).map((vertical) => <option key={vertical}>{vertical}</option>)}</select></label>
             <label>Segment<select value={selectedSegment} onChange={(event) => setSelectedSegment(event.target.value)}><option value="All segments">All segments</option>{marketSegments.filter((segment) => selectedVertical === "All markets" || segment.vertical === selectedVertical).map((segment) => <option value={segment.id} key={segment.id}>{segment.segment}</option>)}</select></label>
             <label>Geography<select value={selectedGeography} onChange={(event) => setSelectedGeography(event.target.value)}><option>North America</option><option>United States</option><option>State</option><option>Metro</option><option>Facility / project</option></select></label>
-            <div className="focus-path"><small>Persistent cross-section</small><b>{focusMode === "competitor" ? `${selectedCompetitor.name} / ` : ""}{selectedVertical}{selectedSegment !== "All segments" ? ` / ${marketSegments.find((segment) => segment.id === selectedSegment)?.segment}` : ""}</b><span>{selectedGeography} · retained across every workspace</span></div>
+            <div className="focus-path"><small>Active cross-section</small><b>{focusMode === "competitor" ? `${selectedCompetitor.name} / ` : ""}{selectedVertical}{selectedSegment !== "All segments" ? ` / ${marketSegments.find((segment) => segment.id === selectedSegment)?.segment}` : ""}</b><span>{selectedGeography} · retained across workspaces</span></div>
           </section>}
           <section className="workspace-heading">
-            <div><span className="eyebrow"><FileSearch size={14} /> INTELLIGENCE WORKSPACE</span><h1>{active}</h1><p>{active === "Sources" ? "Inspect coverage, ownership, update method, and source health before trusting an output." : active === "Data Operations" ? "Control bulk imports, live connectors, schema contracts, freshness, and publication gates from one place." : active === "Enforcement & Injuries" ? "Navigate injury evidence by source, market, geography, event, establishment, and contributing factor." : active === "Corporate Activity" ? "Track transactions, product moves, and messaging changes without mixing source facts with analyst interpretation." : "Navigate evidence as connected records—not disconnected dashboard tiles."}</p></div>
+            <div><span className="eyebrow"><FileSearch size={14} /> EVIDENCE-BACKED INTELLIGENCE</span><h1>{active}</h1><p>{active === "Sources" ? "Inspect coverage, ownership, update method, and source health before trusting an output." : active === "Data Operations" ? "Control bulk imports, live connectors, schema contracts, freshness, and publication gates from one place." : active === "Injuries" ? "Explore injury evidence by source, market, geography, event, establishment, equipment, and contributing factor." : active === "Enforcement" ? "Track inspections, citations, penalties, repeat visits, establishments, and agency activity separately from injury records." : active === "Corporate Activity" ? "Track transactions, ownership, leadership, product moves, and messaging changes without mixing facts with interpretation." : active === "Contractor Management" ? "Analyze the contractor-risk market, buyer workflows, specialist competitors, regulatory exposure, and product signals." : active === "Sustainability" ? "Analyze sustainability regulation, reporting obligations, market demand, product coverage, and specialist competitors." : active === "Signals" ? "Review material changes across markets, hiring, regulations, competitors, enforcement, injuries, and corporate activity." : "Navigate connected evidence across markets, companies, regulations, enforcement, injuries, and economic signals."}</p></div>
             <div className="workspace-meta"><span><b>{active === "Sources" ? sources.length : active === "Data Operations" ? sourceRegistry.length : filtered.length}</b> {active === "Data Operations" ? "registered sources" : "records in view"}</span><button><RefreshCw size={14} /> Last structured today</button></div>
           </section>
 
@@ -479,7 +494,7 @@ export default function Home() {
                 <div className="live-pipeline panel">
                   <div className="operation-heading"><span><i><BarChart3 size={18} /></i><span><b>Economic activity feed</b><small>BLS QCEW · national private ownership</small></span></span><mark className={dataFeedStatus}>{dataFeedStatus}</mark></div>
                   <div className="economic-list">{intelligenceFeed?.economic.records.map((record) => <article key={record.id}><div><b>{record.label}</b><small>NAICS {record.naics} · {record.period}</small></div><strong className={(record.employmentGrowth ?? 0) >= 0 ? "positive" : "negative"}>{record.employmentGrowth === null ? "Pending" : `${record.employmentGrowth > 0 ? "+" : ""}${record.employmentGrowth.toFixed(1)}%`}</strong><span>employment YoY</span><footer>{record.employment === null ? "Source unavailable" : `${record.employment.toLocaleString()} jobs · ${record.establishments?.toLocaleString()} establishments`}</footer></article>) ?? <div className="loading-state">Checking official QCEW slices…</div>}</div>
-                  <div className="pipeline-note"><ShieldCheck size={15} /><span>Economic signals are contextual evidence—not proof that Novara wins or losses were caused by market growth.</span></div>
+                  <div className="pipeline-note"><ShieldCheck size={15} /><span>Economic signals are contextual evidence—not proof that commercial outcomes were caused by market growth.</span></div>
                 </div>
               </div>
 
@@ -496,7 +511,7 @@ export default function Home() {
 
               <div className="schema-contract panel"><div><span className="panel-kicker">Normalized event contract</span><h2>Required before any record can publish</h2><p>Raw source fields remain intact; normalized dimensions are additive and versioned.</p></div><div>{importContract.map((field) => <span key={field.field}><code>{field.field}</code><mark className={field.required ? "required" : "optional"}>{field.required ? "Required" : "When available"}</mark><small>{field.purpose}</small></span>)}</div></div>
             </section>
-          ) : active === "Enforcement & Injuries" ? (
+          ) : active === "Injuries" ? (
             <section className="injury-navigator">
               <div className="injury-hero panel"><div><span className="panel-kicker">Injury intelligence system</span><h2>One navigator across historical and new injury evidence</h2><p>The approved All Injuries file remains the historical backbone. OSHA ITA, severe injury, fatality, inspection, and MSHA sources add refreshable evidence through separately versioned pipelines.</p></div><div className="injury-hero-status"><span><b>{intelligenceFeed?.injury.sources.length ?? 4}</b> source families mapped</span><mark>Awaiting approved historical file</mark></div></div>
               <div className="injury-filter-grid panel"><label>Event family<select><option>All event families</option><option>Recordable case</option><option>Severe injury</option><option>Fatality</option><option>Inspection / citation</option></select></label><label>Factor<select><option>All factors</option><option>Fall</option><option>Struck by</option><option>Caught in / between</option><option>Exposure</option><option>Ergonomic</option></select></label><label>Source<select><option>All sources</option>{intelligenceFeed?.injury.sources.map((source) => <option key={source.name}>{source.name}</option>)}</select></label><label>Time period<select><option>Full available history</option><option>Last 12 months</option><option>Last quarter</option></select></label></div>
@@ -522,7 +537,12 @@ export default function Home() {
             </section>
           ) : (
             <>
-              {["Navigator", "Industries"].includes(active) && <section className="market-navigator">
+              {active === "Intelligence Index" && <section className="intelligence-index">
+                <div className="index-intro panel"><div><span className="panel-kicker">Start with a strategic question</span><h2>Investigate the market, not the interface</h2><p>Each pathway preserves the active market, segment, geography, competitor, period, and evidence requirements as you move through the system.</p></div><div className="index-state"><span><b>{sourceRegistry.length}</b> registered sources</span><span><b>{sourceRegistry.filter((source) => source.status === "Live" || source.status === "Ready").length}</b> live or ready</span><span><b>{competitors.length}</b> competitor profiles</span></div></div>
+                <div className="question-grid">{questionPathways.map(({ question, target, evidence, icon: Icon }) => <button className="question-card" key={question} onClick={() => selectNavigation(target)}><span><Icon size={16} /><mark>{target}</mark></span><h3>{question}</h3><p>{evidence}</p><footer>Open investigation <ArrowRight size={13} /></footer></button>)}</div>
+                <div className="index-monitor panel"><div><span className="panel-kicker">System coverage</span><h2>Continuous intelligence requires visible source health</h2></div><div><span><i className="live" /><b>Government feeds</b><small>Regulations and economic indicators connected</small></span><span><i className="mapped" /><b>State enforcement</b><small>State-by-state connector registry planned</small></span><span><i className="access" /><b>EHS hiring</b><small>Licensed job-posting source required</small></span><span><i className="mapped" /><b>Industry publications</b><small>Monitoring and topic taxonomy planned</small></span></div></div>
+              </section>}
+              {active === "Markets" && <section className="market-navigator">
                 <div className="market-entry-grid">
                   {verticals.map((vertical) => {
                     const segments = marketSegments.filter((segment) => segment.vertical === vertical);
@@ -532,7 +552,7 @@ export default function Home() {
                 </div>
                 <div className="segment-explorer panel">
                   <div className="segment-heading"><div><span className="panel-kicker">Market hierarchy</span><h2>{selectedVertical === "All markets" ? "Priority EHS segments" : selectedVertical}</h2></div><p>Open a segment to carry its NAICS, geography, workforce, agency, obligation, exposure, and module context across the application.</p></div>
-                  <div className="segment-table"><div className="segment-row segment-head"><span>Segment</span><span>NAICS</span><span>Workforce</span><span>Agency coverage</span><span>Novara modules</span></div>{focusedSegments.map((segment) => <button className={selectedSegment === segment.id ? "segment-row selected" : "segment-row"} key={segment.id} onClick={() => openMarket(segment.vertical, segment.id)}><span><b>{segment.segment}</b><small>{segment.vertical}</small></span><span>{segment.naics.join(", ")}</span><span>{segment.workforce.slice(0, 2).join(" · ")}</span><span>{segment.agencies.slice(0, 2).join(" · ")}</span><span>{segment.novaraModules.slice(0, 2).join(" · ")}<ChevronRight size={13} /></span></button>)}</div>
+                  <div className="segment-table"><div className="segment-row segment-head"><span>Segment</span><span>NAICS</span><span>Workforce</span><span>Agency coverage</span><span>Product workflows</span></div>{focusedSegments.map((segment) => <button className={selectedSegment === segment.id ? "segment-row selected" : "segment-row"} key={segment.id} onClick={() => openMarket(segment.vertical, segment.id)}><span><b>{segment.segment}</b><small>{segment.vertical}</small></span><span>{segment.naics.join(", ")}</span><span>{segment.workforce.slice(0, 2).join(" · ")}</span><span>{segment.agencies.slice(0, 2).join(" · ")}</span><span>{segment.novaraModules.slice(0, 2).join(" · ")}<ChevronRight size={13} /></span></button>)}</div>
                 </div>
                 {activeSegment && intensity && <div className="intensity-workbench panel">
                   <div className="intensity-summary"><div><span className="panel-kicker">Explainable compliance intensity</span><h2>{activeSegment.segment}</h2><p>This is a structural signal, not a market ranking. Missing enforcement and injury evidence is excluded and shown explicitly.</p></div><div className="intensity-score"><small>Structural signal</small><strong>{intensity.structuralSignal}</strong><span>/ 100</span><mark>{intensity.evidenceCoverage}% evidence coverage</mark></div></div>
@@ -540,6 +560,20 @@ export default function Home() {
                   <div className="factor-grid">{intensity.factors.map((factor) => <article className={factor.value === null ? "factor-card pending" : "factor-card"} key={factor.label}><header><span>{factor.label}<small>{factor.weight}% weight</small></span>{factor.value === null ? <mark>Not scored</mark> : <strong>{factor.value}</strong>}</header>{factor.value !== null && <div className="factor-bar"><i style={{ width: `${factor.value}%` }} /></div>}<p>{factor.evidence}</p><footer>{factor.value === null ? <Info size={12} /> : <Check size={12} />}{factor.status}</footer></article>)}</div>
                   <div className="intensity-policy"><ShieldCheck size={17} /><span><b>Trust rule</b> A full compliance-intensity score cannot publish until required sources, denominators, periods, and geography coverage are recorded for every weighted factor.</span></div>
                 </div>}
+              </section>}
+              {activeProductDomain && <section className="product-domain">
+                <div className="domain-brief panel"><div><span className="panel-kicker">Independent product intelligence domain</span><h2>{active}</h2><p>This workspace has its own buyers, regulations, workflows, specialist competitors, evidence sources, and market signals. It is connected to core EHS intelligence without being collapsed into it.</p></div><div className="domain-status"><span><b>Mapped</b> domain model</span><span><b>Next</b> live connectors</span></div></div>
+                <div className="domain-grid"><div className="panel"><span className="section-label">Questions this domain must answer</span>{activeProductDomain.questions.map((question) => <button key={question}>{question}<ArrowRight size={13} /></button>)}</div><div className="panel"><span className="section-label">Specialist competitor set</span><div className="domain-tags">{activeProductDomain.competitors.map((competitor) => <button key={competitor} onClick={() => { const profile = competitors.find((item) => item.name === competitor); if (profile) openCompetitor(profile.id); }}>{competitor}<ChevronRight size={12} /></button>)}</div></div><div className="panel"><span className="section-label">Required evidence layers</span>{activeProductDomain.evidence.map((item) => <span className="evidence-line" key={item}><CircleDot size={11} />{item}</span>)}</div></div>
+                <div className="domain-roadmap panel"><ShieldCheck size={16} /><span><b>Trust boundary</b> No market-strength, capability-depth, or regulatory-coverage claim will publish from marketing copy alone. Every claim requires an identified source, retrieval date, evidence class, and review status.</span></div>
+              </section>}
+              {active === "Enforcement" && <section className="enforcement-overview">
+                <div className="domain-brief panel"><div><span className="panel-kicker">Agency action intelligence</span><h2>Inspections, citations, penalties, and repeat activity</h2><p>Enforcement records remain distinct from injury cases and regulations. The shared keys are establishment, company, NAICS, geography, agency, standard, and time.</p></div><div className="domain-status"><span><b>Federal</b> OSHA · EPA · MSHA</span><span><b>State</b> connector matrix</span></div></div>
+                <div className="enforcement-dimensions">{["Agency and jurisdiction", "Inspection and case", "Standard and violation", "Initial and final penalty", "Repeat or willful status", "Return visits and related sites", "Establishment and parent", "NAICS and geography"].map((item) => <div className="panel" key={item}><Check size={13} /><span>{item}</span></div>)}</div>
+                <div className="domain-roadmap panel"><Info size={16} /><span><b>Coverage rule</b> State Plan coverage is shown independently. A missing state connector cannot be interpreted as zero enforcement.</span></div>
+              </section>}
+              {active === "Signals" && <section className="signals-workspace">
+                <div className="domain-brief panel"><div><span className="panel-kicker">Material change detection</span><h2>What changed—and which strategic question does it affect?</h2><p>Signals route users to evidence-backed investigations. They do not become facts or recommendations until their source, scope, and implications are reviewed.</p></div><div className="domain-status"><span><b>Live</b> regulation · economics</span><span><b>Planned</b> jobs · publications</span></div></div>
+                <div className="signal-grid">{[{ title: "EHS hiring demand", status: "Requires licensed API", detail: "Open roles, employer, occupation, skills, geography, industry and posting velocity" }, { title: "Market momentum", status: "Live foundation", detail: "Employment, establishments, wages, payroll, output and concentration" }, { title: "Regulatory change", status: "Live foundation", detail: "Federal Register documents, lifecycle, applicability and effective dates" }, { title: "Industry publications", status: "Connector design", detail: "EHS and vertical publications classified by market, company, topic and materiality" }, { title: "Competitor change", status: "Snapshot model", detail: "Messaging, modules, case studies, releases, leadership and ownership" }, { title: "Enforcement movement", status: "Source expansion", detail: "Inspection, citation, penalty and repeat-action patterns by jurisdiction" }].map((signal) => <article className="panel" key={signal.title}><span><Radar size={14} /><mark>{signal.status}</mark></span><h3>{signal.title}</h3><p>{signal.detail}</p><footer>Review source plan <ArrowRight size={12} /></footer></article>)}</div>
               </section>}
               {active === "Competitors" && <>
                 <section className="competitor-workspace">
@@ -558,14 +592,14 @@ export default function Home() {
                 <section className="battlecard-bar"><div><span className="panel-kicker">Evidence-gated output</span><h2>{selectedCompetitor.name} battlecard assembly</h2><p>Exports include sourced company statements and explicit evidence gaps. Unsupported comparisons remain blocked.</p></div><div className="gate-list"><span><Check size={12} /> Official source</span><span><Check size={12} /> Reliability labeled</span><span className="pending">Feature depth review required</span></div><button onClick={exportBattlecard}><Download size={14} /> Export draft battlecard</button></section>
               </>}
               {active === "Regulations" && <section className={`feed-bar ${feedStatus}`}><div><RefreshCw size={15} /><span><b>Federal Register connector</b><small>{feedStatus === "live" ? `${liveRecords.length} live OSHA documents normalized with primary-source links` : feedStatus === "degraded" ? "Live feed unavailable; trusted static records remain available without an error screen" : "Checking the official public feed"}</small></span></div><mark>{feedStatus}</mark></section>}
-              <section className="filter-bar">
+              {!(["Intelligence Index", "Markets", "Competitors", "Sustainability", "Contractor Management", "Enforcement", "Signals"].includes(active)) && <section className="filter-bar">
                 <span><Filter size={14} /> Refine</span>
                 <label>Industry<select value={industry} onChange={(event) => setIndustry(event.target.value)}><option>All industries</option><option>Construction</option><option>Manufacturing</option><option>Energy & Utilities</option></select></label>
                 <label>Reliability<select value={reliability} onChange={(event) => setReliability(event.target.value)}><option>All reliability</option><option>Verified Fact</option><option>Company Statement</option><option>Source Structure</option></select></label>
                 <button onClick={() => { setIndustry("All industries"); setReliability("All reliability"); setQuery(""); }}>Clear filters</button>
-              </section>
+              </section>}
 
-              <section className="evidence-layout">
+              {!(["Intelligence Index", "Markets", "Competitors", "Sustainability", "Contractor Management", "Enforcement", "Signals"].includes(active)) && <section className="evidence-layout">
                 <div className="record-browser panel">
                   <div className="record-header"><span>Intelligence record</span><span>Domain</span><span>Reliability</span><span>Retrieved</span></div>
                   <div className="record-list">
@@ -582,7 +616,7 @@ export default function Home() {
                   <div className="drawer-section"><span className="section-label">Connected dimensions</span><div className="dimension-group"><b>Industries</b><div>{selected.industries.map((item) => <span key={item}>{item}</span>)}</div></div><div className="dimension-group"><b>Geography</b><div>{selected.geographies.map((item) => <span key={item}>{item}</span>)}</div></div>{selected.agencies.length > 0 && <div className="dimension-group"><b>Agencies</b><div>{selected.agencies.map((item) => <span key={item}>{item}</span>)}</div></div>}</div>
                   <div className="drawer-section related-section"><span className="section-label">Related intelligence</span>{selected.related.map((item) => <button key={item}>{item}<ArrowRight size={13} /></button>)}</div>
                 </aside>
-              </section>
+              </section>}
             </>
           )}
         </div>
