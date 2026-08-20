@@ -70,6 +70,17 @@ type FeedResponse = {
     publicationDate: string;
     htmlUrl: string;
     agencies: string[];
+    documentType: string;
+    lifecycleStage: string;
+    lifecycleMilestone: string;
+    effectiveOn: string | null;
+    commentsCloseOn: string | null;
+    docketIds: string[];
+    regulationIdNumbers: string[];
+    cfrReferences: string[];
+    markets: string[];
+    topics: string[];
+    applicabilityStatus: string;
   }>;
 };
 
@@ -329,6 +340,9 @@ export default function Home() {
   const [intelligenceFeed, setIntelligenceFeed] = useState<IntelligenceFeed | null>(null);
   const [dataFeedStatus, setDataFeedStatus] = useState<"loading" | "live" | "degraded">("loading");
   const [importCandidate, setImportCandidate] = useState<{ name: string; size: number; type: string; header: string[] } | null>(null);
+  const [regulatoryDocuments, setRegulatoryDocuments] = useState<FeedResponse["records"]>([]);
+  const [selectedRegulationNumber, setSelectedRegulationNumber] = useState("");
+  const [regulationStage, setRegulationStage] = useState("All stages");
 
   useEffect(() => {
     let activeRequest = true;
@@ -337,6 +351,8 @@ export default function Home() {
       .then((payload: FeedResponse) => {
         if (!activeRequest) return;
         setFeedStatus(payload.status);
+        setRegulatoryDocuments(payload.records);
+        setSelectedRegulationNumber((current) => current || payload.records[0]?.documentNumber || "");
         setLiveRecords(payload.records.map((item) => ({
           id: `fr-${item.documentNumber}`,
           domain: "Regulations",
@@ -395,6 +411,15 @@ export default function Home() {
   const comparisonChecks = useMemo(() => activeSegment && comparisonSegment
     ? buildComparisonChecks(activeSegment, comparisonSegment, selectedGeography, intelligenceFeed?.economic.records ?? [])
     : [], [activeSegment, comparisonSegment, intelligenceFeed, selectedGeography]);
+  const regulationStages = useMemo(() => ["All stages", ...new Set(regulatoryDocuments.map((document) => document.lifecycleStage))], [regulatoryDocuments]);
+  const visibleRegulations = useMemo(() => regulatoryDocuments.filter((document) => {
+    const stageMatch = regulationStage === "All stages" || document.lifecycleStage === regulationStage;
+    const marketMatch = selectedVertical === "All markets" || document.markets.includes(selectedVertical) || document.markets.includes("Applicability review required");
+    const text = query.toLowerCase().trim();
+    const haystack = [document.title, document.abstract, document.documentType, ...document.agencies, ...document.markets, ...document.topics, ...document.cfrReferences].join(" ").toLowerCase();
+    return stageMatch && marketMatch && (!text || haystack.includes(text));
+  }), [query, regulationStage, regulatoryDocuments, selectedVertical]);
+  const selectedRegulation = useMemo(() => visibleRegulations.find((document) => document.documentNumber === selectedRegulationNumber) ?? visibleRegulations[0], [selectedRegulationNumber, visibleRegulations]);
 
   const filtered = useMemo(() => {
     const text = query.toLowerCase().trim();
@@ -618,7 +643,8 @@ export default function Home() {
                 </section>
                 <section className="battlecard-bar"><div><span className="panel-kicker">Evidence-gated output</span><h2>{selectedCompetitor.name} battlecard assembly</h2><p>Exports include sourced company statements and explicit evidence gaps. Unsupported comparisons remain blocked.</p></div><div className="gate-list"><span><Check size={12} /> Official source</span><span><Check size={12} /> Reliability labeled</span><span className="pending">Feature depth review required</span></div><button onClick={exportBattlecard}><Download size={14} /> Export draft battlecard</button></section>
               </>}
-              {active === "Regulations" && <section className={`feed-bar ${feedStatus}`}><div><RefreshCw size={15} /><span><b>Federal Register connector</b><small>{feedStatus === "live" ? `${liveRecords.length} live OSHA documents normalized with primary-source links` : feedStatus === "degraded" ? "Live feed unavailable; trusted static records remain available without an error screen" : "Checking the official public feed"}</small></span></div><mark>{feedStatus}</mark></section>}
+              {active === "Regulations" && <section className={`feed-bar ${feedStatus}`}><div><RefreshCw size={15} /><span><b>Federal Register connector</b><small>{feedStatus === "live" ? `${regulatoryDocuments.length} live EHS rulemaking documents normalized with primary-source links` : feedStatus === "degraded" ? "Live feed unavailable; trusted static records remain available without an error screen" : "Checking the official public feed"}</small></span></div><mark>{feedStatus}</mark></section>}
+              {active === "Regulations" && <section className="regulation-library"><div className="regulation-summary panel"><div><span className="panel-kicker">Regulatory applicability library</span><h2>Rulemaking events, codified text, and applicability stay separate</h2><p>Federal Register documents identify proposed rules, final rules, notices, dockets, and dates. eCFR is the codified-text layer. Neither becomes an industry obligation until applicability is reviewed.</p></div><div><span><b>{regulatoryDocuments.length}</b> live documents</span><span><b>{visibleRegulations.length}</b> in current cross-section</span><span><b>0</b> auto-approved obligations</span></div></div><div className="regulation-controls panel"><label>Lifecycle<select value={regulationStage} onChange={(event) => setRegulationStage(event.target.value)}>{regulationStages.map((stage) => <option key={stage}>{stage}</option>)}</select></label><span><b>Market scope</b>{selectedVertical}</span><span><b>Jurisdiction</b>Federal rulemaking</span><span><b>Review gate</b>Human applicability required</span></div><div className="regulation-workbench panel"><div className="regulation-list"><div className="regulation-list-head"><span>Document</span><span>Lifecycle</span><span>Published</span></div>{visibleRegulations.length ? visibleRegulations.map((document) => <button className={selectedRegulation?.documentNumber === document.documentNumber ? "selected" : ""} key={document.documentNumber} onClick={() => setSelectedRegulationNumber(document.documentNumber)}><span><b>{document.title}</b><small>{document.agencies.join(" · ") || "Agency unavailable"}</small></span><span><mark>{document.lifecycleStage}</mark><small>{document.documentType}</small></span><span>{document.publicationDate}<ChevronRight size={13} /></span></button>) : <div className="regulation-empty"><Search size={20} /><b>No documents match this cross-section</b><span>Broaden the market, lifecycle, or global search filter.</span></div>}</div>{selectedRegulation && <aside className="regulation-detail"><header><div><mark>{selectedRegulation.lifecycleStage}</mark><span>{selectedRegulation.applicabilityStatus}</span></div><a href={selectedRegulation.htmlUrl} target="_blank" rel="noreferrer"><ExternalLink size={13} /> Primary document</a></header><h2>{selectedRegulation.title}</h2><p>{selectedRegulation.abstract || "The primary document is available, but the API did not supply an abstract."}</p><div className="regulation-facts"><span><b>Publication</b>{selectedRegulation.publicationDate}</span><span><b>Next milestone</b>{selectedRegulation.lifecycleMilestone}</span><span><b>CFR references</b>{selectedRegulation.cfrReferences.join(" · ") || "Not supplied"}</span><span><b>Docket / RIN</b>{[...selectedRegulation.docketIds, ...selectedRegulation.regulationIdNumbers].join(" · ") || "Not supplied"}</span></div><div className="regulation-tags"><span><b>Affected-market candidates</b><i>{selectedRegulation.markets.map((market) => <mark key={market}>{market}</mark>)}</i></span><span><b>Obligation-topic candidates</b><i>{selectedRegulation.topics.map((topic) => <mark key={topic}>{topic}</mark>)}</i></span></div><div className="regulation-source-chain"><b>Required source chain</b><span><i>1</i> Federal Register event</span><span><i>2</i> Docket and RIN continuity</span><span><i>3</i> eCFR codified-text check</span><span><i>4</i> Jurisdiction and market applicability review</span></div><footer><ShieldCheck size={14} /><span><b>Publication boundary</b> Market and topic tags are machine-generated review candidates. They are not legal advice or confirmed applicability.</span></footer></aside>}</div><div className="regulation-coverage-note"><Info size={14} /><span><b>State coverage remains independent.</b> A federal document feed cannot represent State Plan rules, environmental agency requirements, fire codes, utility regulation, or local obligations. Those require jurisdiction-specific connectors and freshness records.</span></div></section>}
               {!(["Data Catalog", "Markets", "Competitors", "Sustainability", "Contractor Management", "Enforcement", "Signals"].includes(active)) && <section className="filter-bar">
                 <span><Filter size={14} /> Refine</span>
                 <label>Industry<select value={industry} onChange={(event) => setIndustry(event.target.value)}><option>All industries</option><option>Construction</option><option>Manufacturing</option><option>Energy & Utilities</option></select></label>
