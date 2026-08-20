@@ -278,7 +278,7 @@ export function CompetitorWorkspace({ selectedCompetitorId, onSelectCompetitor }
     </div>
 
     <nav className="ci-tabs" aria-label="Competitor workspace sections">
-      {tabs.map((tab) => <button className={activeTab === tab.label ? "active" : ""} key={tab.label} onClick={() => setActiveTab(tab.label)}><b>{tab.label}</b><small>{tab.description}</small></button>)}
+      {tabs.map((tab) => <button className={activeTab === tab.label ? "active" : ""} key={tab.label} onClick={() => setActiveTab(tab.label)}><b>{tab.label}</b></button>)}
     </nav>
 
     {activeTab === "Overview" && <div className="ci-command-grid">

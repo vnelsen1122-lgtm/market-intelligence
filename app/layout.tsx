@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./styles.css";
+import "./refined-shell.css";
 
 export const metadata: Metadata = {
   title: "Market Intelligence",
