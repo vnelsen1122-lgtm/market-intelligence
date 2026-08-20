@@ -197,6 +197,15 @@ export function CompetitorWorkspace({ selectedCompetitorId, onSelectCompetitor, 
     } catch { setFeedStatus("Publication refresh could not complete."); }
   };
 
+  useEffect(() => {
+    setSourceScan(null); setScanStatus("");
+    if (activeTab !== "Activity") return;
+    void refreshOfficialSources();
+    void refreshPublicationFeed();
+    const timer = window.setInterval(() => { void refreshOfficialSources(); void refreshPublicationFeed(); }, 15 * 60 * 1000);
+    return () => window.clearInterval(timer);
+  }, [activeTab, selectedCompetitor.id]);
+
   const buildContextBrief = () => {
     const source = contextInput.trim(); if (!source) return;
     const markets = findMatches(source, marketTerms); const modules = findMatches(source, moduleTerms);
