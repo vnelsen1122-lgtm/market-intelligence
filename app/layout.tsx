@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./styles.css";
 
 export const metadata: Metadata = {
-  title: "Novara Intelligence",
-  description: "Market, compliance, and competitive intelligence for Novara.",
+  title: "Market Intelligence",
+  description: "Evidence-backed EHS market, compliance, and competitive intelligence.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
