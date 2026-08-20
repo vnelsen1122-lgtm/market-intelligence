@@ -239,7 +239,7 @@ export function CompetitorWorkspace({ selectedCompetitorId, onSelectCompetitor, 
       {visibleCompetitors.slice(0, 12).map((competitor) => {
         const deep = deepCompetitorIntelligence[competitor.id];
         return <button className={selectedCompetitor.id === competitor.id ? "selected" : ""} onClick={() => onSelectCompetitor(competitor.id)} key={competitor.id}>
-          <span className="ci-mini-logo"><img src={faviconFor(competitor.officialUrl)} alt="" />{competitor.name.slice(0, 2).toUpperCase()}</span>
+          <span className="ci-mini-logo"><img src={faviconFor(competitor.officialUrl)} alt="" onError={(event) => { event.currentTarget.style.display = "none"; }} />{competitor.name.slice(0, 2).toUpperCase()}</span>
           <span><b>{competitor.name}</b><small>{deep ? "Researched" : "Source map"} · {competitor.modules.length} modules</small></span>
           <ChevronRight size={12} />
         </button>;
@@ -248,7 +248,7 @@ export function CompetitorWorkspace({ selectedCompetitorId, onSelectCompetitor, 
     </div>
 
     <div className="ci-profile-header panel">
-      <div className="ci-company-mark"><img src={faviconFor(selectedCompetitor.officialUrl)} alt="" /><Building2 size={18} /></div>
+      <div className="ci-company-mark"><img src={faviconFor(selectedCompetitor.officialUrl)} alt="" onError={(event) => { event.currentTarget.style.display = "none"; }} /><Building2 size={18} /></div>
       <div><span className="panel-kicker">{selectedCompetitor.archetype} · {intelligence?.researchStatus ?? "Source map only"}</span><h2>{selectedCompetitor.name}</h2><p>{selectedCompetitor.statedPositioning}</p></div>
       <div className="ci-profile-facts">
         <span><b>{posture.tier}</b><small>Market tier</small></span>
@@ -299,7 +299,7 @@ export function CompetitorWorkspace({ selectedCompetitorId, onSelectCompetitor, 
     </div>}
 
     {activeTab === "Compare" && <div className="ci-compare-workspace">
-      <aside className="panel ci-compare-picker"><span className="section-label">Comparison set</span><h2>Select up to four</h2><p>Use filters above to narrow the market, then add companies to the matrix.</p>{visibleCompetitors.map((competitor) => <label key={competitor.id}><input type="checkbox" checked={compareIds.includes(competitor.id)} onChange={() => toggleCompare(competitor.id)} /><span className="ci-mini-logo"><img src={faviconFor(competitor.officialUrl)} alt="" />{competitor.name.slice(0, 2).toUpperCase()}</span><span><b>{competitor.name}</b><small>{deepCompetitorIntelligence[competitor.id]?.researchStatus ?? "Source map only"}</small></span></label>)}</aside>
+      <aside className="panel ci-compare-picker"><span className="section-label">Comparison set</span><h2>Select up to four</h2><p>Use filters above to narrow the market, then add companies to the matrix.</p>{visibleCompetitors.map((competitor) => <label key={competitor.id}><input type="checkbox" checked={compareIds.includes(competitor.id)} onChange={() => toggleCompare(competitor.id)} /><span className="ci-mini-logo"><img src={faviconFor(competitor.officialUrl)} alt="" onError={(event) => { event.currentTarget.style.display = "none"; }} />{competitor.name.slice(0, 2).toUpperCase()}</span><span><b>{competitor.name}</b><small>{deepCompetitorIntelligence[competitor.id]?.researchStatus ?? "Source map only"}</small></span></label>)}</aside>
       <article className="panel ci-compare-matrix"><header><div><span className="section-label">Capability landscape</span><h2>Cross-competitor public evidence</h2></div><mark>{comparisonCompetitors.length} selected</mark></header><div className="ci-matrix-row head"><span>Capability</span>{comparisonCompetitors.map((competitor) => <span key={competitor.id}>{competitor.name}</span>)}</div>{comparisonDomains.map((capability) => <div className="ci-matrix-row" key={capability}><b>{capability}</b>{comparisonCompetitors.map((competitor) => { const domains = deepCompetitorIntelligence[competitor.id]?.domains ?? inferDomains(competitor.modules, competitor.messagingTags); return <span className={domains.includes(capability) ? "mapped" : "unknown"} key={competitor.id}>{domains.includes(capability) ? <><Check size={11} /> Mapped</> : "Not mapped"}</span>; })}</div>)}<footer><ShieldCheck size={13} /> “Mapped” means public evidence exists for the domain. It does not establish feature parity, quality, packaging or customer adoption.</footer></article>
     </div>}
 
