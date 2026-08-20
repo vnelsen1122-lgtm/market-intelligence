@@ -16,7 +16,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { injuryDataset, type InjuryCell } from "./injury-data";
+import { injuryDataset, type InjuryCell, type InjurySignalCell } from "./injury-data";
 
 type InjuryDetailView = "Industries" | "Pathways" | "Geography" | "Narrative signals";
 type FilterKey = "sector" | "subsector" | "state" | "event" | "nature" | "body" | "source" | "outcome";
@@ -37,6 +37,17 @@ const dimensionPosition: Record<FilterKey, number> = {
   body: 6,
   source: 7,
   outcome: 8,
+};
+
+const signalDimensionPosition: Record<FilterKey, number> = {
+  sector: 2,
+  subsector: 3,
+  state: 4,
+  event: 5,
+  nature: 6,
+  body: 7,
+  source: 8,
+  outcome: 9,
 };
 
 const dimensionValues: Record<FilterKey, readonly string[]> = {
@@ -85,6 +96,7 @@ export function InjuryWorkspace() {
   const [body, setBody] = useState("All body regions");
   const [source, setSource] = useState("All sources");
   const [outcome, setOutcome] = useState("All outcomes");
+  const [selectedSignal, setSelectedSignal] = useState("All narrative signals");
   const [fromYear, setFromYear] = useState(Number(injuryDataset.dimensions.years[0]));
   const [throughYear, setThroughYear] = useState(Number(injuryDataset.dimensions.years.at(-1)));
 
@@ -132,17 +144,39 @@ export function InjuryWorkspace() {
     return [...values.entries()].map(([key, value]) => ({ parts: key.split("||| "), value })).sort((left, right) => right.value - left.value).slice(0, 10);
   }, [cells]);
 
+  const signalCells = useMemo(() => injuryDataset.signalCells.filter((cell) => {
+    const signalCell = cell as InjurySignalCell;
+    const year = Number(injuryDataset.dimensions.years[signalCell[1]]);
+    if (year < fromYear || year > throughYear) return false;
+    return (Object.keys(filterValues) as FilterKey[]).every((key) => {
+      const selected = filterValues[key];
+      if (selected.startsWith("All ")) return true;
+      return dimensionValues[key][signalCell[signalDimensionPosition[key]]] === selected;
+    });
+  }) as unknown as InjurySignalCell[], [filterValues, fromYear, throughYear]);
   const narrativeSignals = useMemo(() => {
-    const selectedSector = sector === "All sectors" ? "All sectors" : sector;
-    const selectedSubsector = subsector === "All subsectors" ? "All subsectors" : subsector;
-    let matches = injuryDataset.signals.filter((signal) => signal.sector === selectedSector && signal.subsector === selectedSubsector);
-    if (!matches.length && selectedSubsector !== "All subsectors") matches = injuryDataset.signals.filter((signal) => signal.sector === selectedSector && signal.subsector === "All subsectors");
-    return matches.slice(0, 12);
-  }, [sector, subsector]);
+    const counts = new Map<string, number>();
+    signalCells.forEach((cell) => {
+      const label = injuryDataset.dimensions.signals[cell[0]];
+      counts.set(label, (counts.get(label) ?? 0) + cell[10]);
+    });
+    return [...counts.entries()].map(([signal, count]) => ({ signal, count })).sort((left, right) => right.count - left.count).slice(0, 36);
+  }, [signalCells]);
+  const selectedSignalCells = useMemo(() => selectedSignal === "All narrative signals" ? [] : signalCells.filter((cell) => injuryDataset.dimensions.signals[cell[0]] === selectedSignal), [selectedSignal, signalCells]);
+  const summarizeSignalCells = (key: FilterKey) => {
+    const counts = new Map<string, number>();
+    selectedSignalCells.forEach((cell) => {
+      const label = dimensionValues[key][cell[signalDimensionPosition[key]]];
+      counts.set(label, (counts.get(label) ?? 0) + cell[10]);
+    });
+    return [...counts.entries()].map(([label, value]) => ({ label, value })).sort((left, right) => right.value - left.value);
+  };
+  const selectedSignalTotal = selectedSignalCells.reduce((sum, cell) => sum + cell[10], 0);
 
-  const activeFilters = [sector, subsector, state, event, nature, body, source, outcome].filter((value) => !value.startsWith("All "));
+  const activeFilters = [sector, subsector, state, event, nature, body, source, outcome, selectedSignal].filter((value) => !value.startsWith("All "));
   const activeFilterCount = activeFilters.length + (fromYear !== Number(injuryDataset.dimensions.years[0]) || throughYear !== Number(injuryDataset.dimensions.years.at(-1)) ? 1 : 0);
-  const clearFilters = () => { setSector("All sectors"); setSubsector("All subsectors"); setState("All states"); setEvent("All events"); setNature("All injury natures"); setBody("All body regions"); setSource("All sources"); setOutcome("All outcomes"); setFromYear(Number(injuryDataset.dimensions.years[0])); setThroughYear(Number(injuryDataset.dimensions.years.at(-1))); };
+  const clearFilters = () => { setSector("All sectors"); setSubsector("All subsectors"); setState("All states"); setEvent("All events"); setNature("All injury natures"); setBody("All body regions"); setSource("All sources"); setOutcome("All outcomes"); setSelectedSignal("All narrative signals"); setFromYear(Number(injuryDataset.dimensions.years[0])); setThroughYear(Number(injuryDataset.dimensions.years.at(-1))); };
+  const chooseSignal = (signal: string) => { setSelectedSignal(signal); setDetailView("Narrative signals"); };
   const choose = (key: FilterKey, value: string) => {
     if (key === "sector") { setSector(value); setSubsector("All subsectors"); }
     if (key === "subsector") setSubsector(value);
@@ -177,7 +211,7 @@ export function InjuryWorkspace() {
       <article className="panel injury-trend"><header><div><span className="section-label">Time profile</span><h3>Reported cases by year</h3></div><mark>Counts, not rates</mark></header><div className="injury-year-chart">{trend.map((item) => <button onClick={() => { setFromYear(item.year); setThroughYear(item.year); }} key={item.year}><span><i style={{ height: `${Math.max(5, item.cases / maximumTrend * 100)}%` }} /></span><b>{item.year}</b><small>{formatNumber(item.cases)}</small></button>)}</div></article>
       <article className="panel injury-ranked"><header><div><span className="section-label">Industry concentration</span><h3>Cases by NAICS sector</h3></div><Factory size={17} /></header><RankedBars items={sectorCounts} total={sectorTotal} active={sector} onSelect={(label) => choose("sector", label)} limit={9} /></article>
       <article className="panel injury-ranked"><header><div><span className="section-label">Mechanism profile</span><h3>How incidents happen</h3></div><BarChart3 size={17} /></header><RankedBars items={eventCounts} total={eventTotal} active={event} onSelect={(label) => choose("event", label)} limit={8} /></article>
-      <article className="panel injury-signal-card"><header><div><span className="section-label">Narrative evidence</span><h3>Recurring real-world signals</h3></div><Sparkles size={17} /></header><div className="injury-signal-cloud">{narrativeSignals.map((signal, index) => <span style={{ fontSize: `${Math.max(10, 17 - index * .45)}px` }} key={signal.signal}><b>{signal.signal}</b><small>{formatNumber(signal.count)}</small></span>)}</div><footer>Terms are deterministic matches from narratives; raw text is not included in the application.</footer></article>
+      <article className="panel injury-signal-card"><header><div><span className="section-label">Narrative environment</span><h3>Recurring conditions and equipment</h3></div><Sparkles size={17} /></header><div className="injury-signal-cloud">{narrativeSignals.slice(0, 16).map((signal, index) => <button className={selectedSignal === signal.signal ? "selected" : ""} onClick={() => chooseSignal(signal.signal)} style={{ fontSize: `${Math.max(10, 17 - index * .35)}px` }} key={signal.signal}><b>{signal.signal}</b><small>{formatNumber(signal.count)}</small></button>)}</div><footer>Click a signal to inspect its sectors, mechanisms, injury patterns and reporting footprint. Raw narratives remain protected.</footer></article>
     </div>
 
     <div className="injury-control-panel panel">
@@ -225,8 +259,14 @@ export function InjuryWorkspace() {
     </div>}
 
     {detailView === "Narrative signals" && <div className="injury-narrative-view">
-      <article className="panel injury-narrative-intro"><span><Search size={18} /></span><div><span className="section-label">Language layer</span><h3>What the narratives reveal about operating conditions</h3><p>Structured codes explain what happened. Narrative signals surface equipment, environments and recurring work conditions that codes alone can obscure.</p></div><mark>Raw narratives protected</mark></article>
-      <div className="injury-narrative-grid">{narrativeSignals.map((signal, index) => <article className="panel" key={signal.signal}><span>{String(index + 1).padStart(2, "0")}</span><h3>{signal.signal}</h3><strong>{formatNumber(signal.count)}</strong><small>matching narratives</small><i><em style={{ width: `${signal.count / (narrativeSignals[0]?.count ?? 1) * 100}%` }} /></i></article>)}</div>
+      <article className="panel injury-narrative-intro"><span><Search size={18} /></span><div><span className="section-label">Narrative environment layer</span><h3>{selectedSignal === "All narrative signals" ? "What the narratives reveal about operating conditions" : selectedSignal}</h3><p>{selectedSignal === "All narrative signals" ? "Choose any signal to trace it back into sectors, mechanisms, equipment and injury outcomes." : `${formatNumber(selectedSignalTotal)} de-identified reports in the current cross-section contain this controlled narrative signal.`}</p></div><mark>Raw narratives protected</mark></article>
+      {selectedSignal !== "All narrative signals" && <div className="injury-signal-analysis">
+        <article className="panel injury-ranked"><header><div><span className="section-label">Industry concentration</span><h3>Sectors with {selectedSignal.toLowerCase()}</h3></div></header><RankedBars items={summarizeSignalCells("sector")} total={selectedSignalTotal} active={sector} onSelect={(label) => choose("sector", label)} limit={8} /></article>
+        <article className="panel injury-ranked"><header><div><span className="section-label">Mechanism</span><h3>What happened</h3></div></header><RankedBars items={summarizeSignalCells("event")} total={selectedSignalTotal} active={event} onSelect={(label) => choose("event", label)} limit={8} /></article>
+        <article className="panel injury-ranked"><header><div><span className="section-label">Injury pattern</span><h3>Most common injury nature</h3></div></header><RankedBars items={summarizeSignalCells("nature")} total={selectedSignalTotal} active={nature} onSelect={(label) => choose("nature", label)} limit={8} /></article>
+        <article className="panel injury-ranked"><header><div><span className="section-label">Reporting footprint</span><h3>States represented</h3></div></header><RankedBars items={summarizeSignalCells("state")} total={selectedSignalTotal} active={state} onSelect={(label) => choose("state", label)} limit={8} /></article>
+      </div>}
+      <div className="injury-narrative-grid">{narrativeSignals.map((signal, index) => <button className={selectedSignal === signal.signal ? "panel selected" : "panel"} onClick={() => chooseSignal(signal.signal)} key={signal.signal}><span>{String(index + 1).padStart(2, "0")}</span><h3>{signal.signal}</h3><strong>{formatNumber(signal.count)}</strong><small>matching narratives</small><i><em style={{ width: `${signal.count / (narrativeSignals[0]?.count ?? 1) * 100}%` }} /></i></button>)}</div>
       <article className="panel injury-narrative-policy"><ShieldCheck size={16} /><span><b>Privacy and trust boundary</b> Narrative counts use deterministic phrase matching. Employer names, record identifiers, addresses, exact dates, coordinates and narrative text are excluded from this production dataset.</span></article>
     </div>}
   </section>;
