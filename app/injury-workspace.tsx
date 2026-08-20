@@ -18,15 +18,14 @@ import {
 import { useMemo, useState } from "react";
 import { injuryDataset, type InjuryCell } from "./injury-data";
 
-type InjuryView = "Landscape" | "Industries" | "Pathways" | "Geography" | "Narrative signals";
+type InjuryDetailView = "Industries" | "Pathways" | "Geography" | "Narrative signals";
 type FilterKey = "sector" | "subsector" | "state" | "event" | "nature" | "body" | "source" | "outcome";
 
-const views: Array<{ label: InjuryView; detail: string }> = [
-  { label: "Landscape", detail: "Scale, trend and concentration" },
-  { label: "Industries", detail: "NAICS sectors and subsectors" },
-  { label: "Pathways", detail: "Event, source, nature and body" },
-  { label: "Geography", detail: "State reporting footprint" },
-  { label: "Narrative signals", detail: "Recurring environmental language" },
+const detailViews: Array<{ label: InjuryDetailView; title: string }> = [
+  { label: "Industries", title: "Industry detail" },
+  { label: "Pathways", title: "Injury pathways" },
+  { label: "Geography", title: "Geography" },
+  { label: "Narrative signals", title: "Narrative signals" },
 ];
 
 const dimensionPosition: Record<FilterKey, number> = {
@@ -77,7 +76,7 @@ function RankedBars({ items, total, active, onSelect, limit = 8 }: { items: Arra
 }
 
 export function InjuryWorkspace() {
-  const [view, setView] = useState<InjuryView>("Landscape");
+  const [detailView, setDetailView] = useState<InjuryDetailView | null>(null);
   const [sector, setSector] = useState("All sectors");
   const [subsector, setSubsector] = useState("All subsectors");
   const [state, setState] = useState("All states");
@@ -186,24 +185,28 @@ export function InjuryWorkspace() {
       <article className="panel"><span>Inspection-linked</span><strong>{formatNumber(totals.inspectionLinked)}</strong><small>{formatShare(totals.inspectionLinked, Math.max(totals.cases, 1))} of filtered cases</small></article>
     </div>
 
-    <nav className="injury-view-tabs" aria-label="Injury intelligence views">{views.map((item) => <button className={view === item.label ? "active" : ""} onClick={() => setView(item.label)} key={item.label}><b>{item.label}</b><span>{item.detail}</span></button>)}</nav>
-
-    {view === "Landscape" && <div className="injury-view-grid landscape">
+    <div className="injury-overview-label"><div><span className="section-label">Visual overview</span><h3>Your current cross-section</h3></div><small>This overview stays visible while you explore details.</small></div>
+    <div className="injury-view-grid landscape">
       <article className="panel injury-trend"><header><div><span className="section-label">Time profile</span><h3>Reported cases by year</h3></div><mark>Counts, not rates</mark></header><div className="injury-year-chart">{trend.map((item) => <button onClick={() => { setFromYear(item.year); setThroughYear(item.year); }} key={item.year}><span><i style={{ height: `${Math.max(5, item.cases / maximumTrend * 100)}%` }} /></span><b>{item.year}</b><small>{formatNumber(item.cases)}</small></button>)}</div></article>
       <article className="panel injury-ranked"><header><div><span className="section-label">Industry concentration</span><h3>Cases by NAICS sector</h3></div><Factory size={17} /></header><RankedBars items={sectorCounts} total={sectorTotal} active={sector} onSelect={(label) => choose("sector", label)} limit={9} /></article>
       <article className="panel injury-ranked"><header><div><span className="section-label">Mechanism profile</span><h3>How incidents happen</h3></div><BarChart3 size={17} /></header><RankedBars items={eventCounts} total={eventTotal} active={event} onSelect={(label) => choose("event", label)} limit={8} /></article>
       <article className="panel injury-signal-card"><header><div><span className="section-label">Narrative evidence</span><h3>Recurring real-world signals</h3></div><Sparkles size={17} /></header><div className="injury-signal-cloud">{narrativeSignals.map((signal, index) => <span style={{ fontSize: `${Math.max(10, 17 - index * .45)}px` }} key={signal.signal}><b>{signal.signal}</b><small>{formatNumber(signal.count)}</small></span>)}</div><footer>Terms are deterministic matches from narratives; raw text is not included in the application.</footer></article>
-    </div>}
+    </div>
 
-    {view === "Industries" && <div className="injury-industry-view">
+    <section className="injury-detail-section">
+      <div className="injury-detail-heading"><div><span className="section-label">Explore further</span><h3>{detailView ? detailViews.find((item) => item.label === detailView)?.title : "Choose a detailed view"}</h3></div>{detailView && <button onClick={() => setDetailView(null)}>Close detail</button>}</div>
+      <nav className="injury-detail-nav" aria-label="Detailed injury views">{detailViews.map((item) => <button className={detailView === item.label ? "active" : ""} onClick={() => setDetailView(detailView === item.label ? null : item.label)} key={item.label}>{item.title}</button>)}</nav>
+    </section>
+
+    {detailView === "Industries" && <div className="injury-industry-view">
       <article className="panel injury-industry-list"><header><div><span className="section-label">NAICS drilldown</span><h3>{sector === "All sectors" ? "Sectors" : `${sector} subsectors`}</h3></div><mark>{formatNumber(totals.cases)} cases in view</mark></header><div className="injury-industry-table"><div className="injury-industry-row head"><span>Industry</span><span>Cases</span><span>Share</span><span>Signal</span></div>{(sector === "All sectors" ? sectorCounts : subsectorCounts).slice(0, 24).map((item) => <button className="injury-industry-row" onClick={() => choose(sector === "All sectors" ? "sector" : "subsector", item.label)} key={item.label}><span><b>{item.label}</b><small>{sector === "All sectors" ? "2-digit sector" : "3-digit subsector"}</small></span><strong>{formatNumber(item.value)}</strong><span>{formatShare(item.value, sector === "All sectors" ? sectorTotal : totals.cases)}</span><ChevronRight size={14} /></button>)}</div></article>
       <aside className="injury-industry-side">
       <article className="panel injury-ranked"><header><div><span className="section-label">Outcome mix</span><h3>What was reported</h3></div><CircleDot size={17} /></header><RankedBars items={outcomeCounts} total={outcomeCounts.reduce((sum, item) => sum + item.value, 0)} active={outcome} onSelect={(label) => choose("outcome", label)} limit={5} /></article>
-        <article className="panel injury-industry-brief"><span className="section-label">Current cut</span><h3>{subsector !== "All subsectors" ? subsector : sector}</h3><p>{eventCounts[0]?.label ?? "No event pattern"} is the largest reported mechanism in this selection. {natureCounts[0]?.label ?? "No injury nature"} is the most common injury nature, with {bodyCounts[0]?.label.toLowerCase() ?? "no body-region signal"} most frequently represented.</p><button onClick={() => setView("Pathways")}>Inspect pathways <ArrowRight size={13} /></button></article>
+        <article className="panel injury-industry-brief"><span className="section-label">Current cut</span><h3>{subsector !== "All subsectors" ? subsector : sector}</h3><p>{eventCounts[0]?.label ?? "No event pattern"} is the largest reported mechanism in this selection. {natureCounts[0]?.label ?? "No injury nature"} is the most common injury nature, with {bodyCounts[0]?.label.toLowerCase() ?? "no body-region signal"} most frequently represented.</p><button onClick={() => setDetailView("Pathways")}>Inspect pathways <ArrowRight size={13} /></button></article>
       </aside>
     </div>}
 
-    {view === "Pathways" && <div className="injury-pathway-view">
+    {detailView === "Pathways" && <div className="injury-pathway-view">
       <div className="injury-pathway-columns">
         {[
           { key: "event" as const, title: "Event mechanism", items: eventCounts, active: event },
@@ -215,12 +218,12 @@ export function InjuryWorkspace() {
       <article className="panel injury-route-table"><header><div><span className="section-label">Dominant combinations</span><h3>Most common injury pathways in this cross-section</h3></div><Network size={17} /></header>{routes.map((route, index) => <div className="injury-route" key={route.parts.join("-")}><strong>{String(index + 1).padStart(2, "0")}</strong>{route.parts.map((part: string, partIndex: number) => <span key={`${part}-${partIndex}`}><b>{part}</b>{partIndex < route.parts.length - 1 && <ChevronRight size={12} />}</span>)}<mark>{formatNumber(route.value)}</mark></div>)}</article>
     </div>}
 
-    {view === "Geography" && <div className="injury-geography-view">
+    {detailView === "Geography" && <div className="injury-geography-view">
       <article className="panel injury-state-rank"><header><div><span className="section-label">Reporting footprint</span><h3>Cases by state</h3></div><Globe2 size={17} /></header><div className="injury-state-grid">{stateCounts.slice(0, 30).map((item, index) => <button className={state === item.label ? "selected" : ""} onClick={() => choose("state", item.label)} key={item.label}><span>{String(index + 1).padStart(2, "0")}</span><b>{item.label}</b><strong>{formatNumber(item.value)}</strong><i style={{ width: `${item.value / (stateCounts[0]?.value ?? 1) * 100}%` }} /></button>)}</div></article>
       <aside className="injury-geography-side"><article className="panel"><span className="section-label">Interpretation boundary</span><h3>Volume is not risk</h3><p>State totals reflect the source dataset’s jurisdiction and reporting coverage. They should not be treated as injury rates until matched to workforce or hours-worked denominators and State Plan coverage.</p><div><Check size={13} /> State available for virtually every record</div><div><Check size={13} /> Exact coordinates retained outside this application</div><div><ShieldCheck size={13} /> No facility dots or addresses published</div></article><article className="panel injury-ranked"><header><div><span className="section-label">Selected geography</span><h3>{state}</h3></div></header><RankedBars items={sectorCounts} total={sectorTotal} active={sector} onSelect={(label) => choose("sector", label)} limit={8} /></article></aside>
     </div>}
 
-    {view === "Narrative signals" && <div className="injury-narrative-view">
+    {detailView === "Narrative signals" && <div className="injury-narrative-view">
       <article className="panel injury-narrative-intro"><span><Search size={18} /></span><div><span className="section-label">Language layer</span><h3>What the narratives reveal about operating conditions</h3><p>Structured codes explain what happened. Narrative signals surface equipment, environments and recurring work conditions that codes alone can obscure.</p></div><mark>Raw narratives protected</mark></article>
       <div className="injury-narrative-grid">{narrativeSignals.map((signal, index) => <article className="panel" key={signal.signal}><span>{String(index + 1).padStart(2, "0")}</span><h3>{signal.signal}</h3><strong>{formatNumber(signal.count)}</strong><small>matching narratives</small><i><em style={{ width: `${signal.count / (narrativeSignals[0]?.count ?? 1) * 100}%` }} /></i></article>)}</div>
       <article className="panel injury-narrative-policy"><ShieldCheck size={16} /><span><b>Privacy and trust boundary</b> Narrative counts use deterministic phrase matching. Employer names, record identifiers, addresses, exact dates, coordinates and narrative text are excluded from this production dataset.</span></article>
