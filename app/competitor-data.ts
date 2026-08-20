@@ -132,6 +132,41 @@ export const competitors: CompetitorProfile[] = [
     messagingTags: ["supply-chain risk", "contractor management", "worker qualification", "sustainability"],
     monitoredSurfaces: [{ label: "Solutions", url: "https://www.avetta.com/clients/solutions" }, { label: "News", url: "https://www.avetta.com/en-us/newsroom" }], marketRelevance: allMarkets, evidenceStatus: "Official source mapped",
   },
+  {
+    id: "hsi", name: "HSI", platform: "HSI Platform", archetype: "Enterprise EHS", officialUrl: "https://hsi.com/solutions/ehs-environmental-health-and-safety/platform-overview", retrieved: "2026-08-19", sourceType: "Official company website", reliability: "Company Statement",
+    statedPositioning: "HSI describes an AI-enabled platform connecting EHS, compliance, operational risk, chemical management, and workforce training in one system.",
+    modules: ["Incidents", "Audits", "Inspections", "Chemical & SDS", "Contractors", "Corrective Actions", "Training", "ESG", "GHG", "Management of Change", "Permit to Work", "Risk"],
+    messagingTags: ["safety intelligence", "AI-enabled workflows", "30+ modules", "training and EHS"],
+    monitoredSurfaces: [{ label: "Platform", url: "https://hsi.com/solutions/ehs-environmental-health-and-safety/platform-overview" }, { label: "Resources", url: "https://hsi.com/resources" }], marketRelevance: allMarkets, evidenceStatus: "Official source mapped",
+  },
+  {
+    id: "safetyculture", name: "SafetyCulture", platform: "SafetyCulture Platform", archetype: "Enterprise EHS", officialUrl: "https://safetyculture.com/platform/", retrieved: "2026-08-19", sourceType: "Official company website", reliability: "Company Statement",
+    statedPositioning: "SafetyCulture describes a workplace operations platform for inspections, issue management, task accountability, training, assets, and connected frontline workflows.",
+    modules: ["Inspections", "Issues", "Tasks", "Training", "Assets", "Sensors", "Analytics", "Integrations"],
+    messagingTags: ["workplace operations", "frontline teams", "continuous improvement", "inspections"],
+    monitoredSurfaces: [{ label: "Platform", url: "https://safetyculture.com/platform/" }, { label: "Resources", url: "https://safetyculture.com/resources/" }], marketRelevance: allMarkets, evidenceStatus: "Official source mapped",
+  },
+  {
+    id: "origami-risk", name: "Origami Risk", platform: "Origami Risk Integrated Platform", archetype: "EHSQ & Operational Risk", officialUrl: "https://www.origamirisk.com/risk/ehs/occupational-health", retrieved: "2026-08-19", sourceType: "Official company website", reliability: "Company Statement",
+    statedPositioning: "Origami Risk describes integrated risk and safety software connecting EHS workflows with claims, RMIS, GRC, and financial outcomes.",
+    modules: ["Safety Management", "Process Safety", "Environmental Compliance", "Chemical Management", "Occupational Health", "Claims", "RMIS", "GRC"],
+    messagingTags: ["integrated risk", "risk and safety", "claims linkage", "financial outcomes"],
+    monitoredSurfaces: [{ label: "EHS suite", url: "https://www.origamirisk.com/risk/ehs/occupational-health" }, { label: "Resources", url: "https://www.origamirisk.com/resources/" }], marketRelevance: allMarkets, evidenceStatus: "Official source mapped",
+  },
+  {
+    id: "quentic", name: "Quentic", platform: "Quentic Platform", archetype: "Enterprise EHS", officialUrl: "https://www.quentic.com/software/", retrieved: "2026-08-19", sourceType: "Official company website", reliability: "Company Statement",
+    statedPositioning: "Quentic describes an AI-enabled EHS and sustainability platform combining health and safety, environmental, quality, compliance, and workflow management.",
+    modules: ["Health & Safety", "Hazardous Chemicals", "Incidents & Observations", "Online Instructions", "Environmental Management", "Processes", "Occupational Health", "Analytics"],
+    messagingTags: ["EHS and sustainability", "AI-enabled", "modular platform", "workflow optimization"],
+    monitoredSurfaces: [{ label: "Software", url: "https://www.quentic.com/software/" }, { label: "News", url: "https://www.quentic.com/news/" }], marketRelevance: ["Manufacturing", "Energy & Utilities", "Waste & Water"], evidenceStatus: "Official source mapped",
+  },
+  {
+    id: "ideagen", name: "Ideagen", platform: "Ideagen EHS, Quality and Compliance", archetype: "EHSQ & Operational Risk", officialUrl: "https://www.ideagen.com/solutions", retrieved: "2026-08-19", sourceType: "Official company website", reliability: "Company Statement",
+    statedPositioning: "Ideagen describes connected EHS, quality, compliance, audit, and risk solutions designed to centralize operational evidence and workflows.",
+    modules: ["EHS", "Quality", "Compliance", "Audit", "Risk", "Incident Management", "Corrective Actions", "Document Control"],
+    messagingTags: ["connected compliance", "EHS and quality", "audit readiness", "operational risk"],
+    monitoredSurfaces: [{ label: "Solutions", url: "https://www.ideagen.com/solutions" }, { label: "Resources", url: "https://www.ideagen.com/resources" }], marketRelevance: allMarkets, evidenceStatus: "Official source mapped",
+  },
 ];
 
 export const competitorArchetypes: Array<"All archetypes" | CompetitorArchetype> = ["All archetypes", "Enterprise EHS", "Construction Safety", "Contractor Risk", "EHSQ & Operational Risk"];

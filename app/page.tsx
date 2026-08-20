@@ -93,7 +93,7 @@ type IntelligenceFeed = {
 };
 
 const navigation = [
-  { label: "Intelligence Index", icon: Radar },
+  { label: "Data Catalog", icon: Database },
   { label: "Markets", icon: Factory },
   { label: "Competitors", icon: Building2 },
   { label: "Regulations", icon: BookOpenCheck },
@@ -107,13 +107,24 @@ const navigation = [
   { label: "Sources", icon: Database },
 ];
 
-const questionPathways = [
-  { question: "Have there been mergers or ownership changes?", target: "Corporate Activity", evidence: "Filings · official releases · transaction reporting", icon: Network },
-  { question: "Is this industry growing or contracting?", target: "Markets", evidence: "Employment · establishments · payroll · output", icon: BarChart3 },
-  { question: "Are employers hiring EHS talent here?", target: "Signals", evidence: "Open roles · skills · employers · geography", icon: Building2 },
-  { question: "Which regulations affect this segment?", target: "Regulations", evidence: "Applicability · effective dates · obligations", icon: BookOpenCheck },
-  { question: "Where is compliance pressure highest?", target: "Enforcement", evidence: "Inspections · citations · penalties · repeat visits", icon: ShieldCheck },
-  { question: "How does injury density compare?", target: "Injuries", evidence: "Events · equipment · outcomes · denominators", icon: HardHat },
+const domainCatalog = [
+  { domain: "Markets", grain: "NAICS × geography × period", keys: "naics · area_fips · period", sources: "BLS QCEW · Census CBP/BDS · BEA", cadence: "Quarterly / annual", coverage: "Economic scale, growth, concentration" },
+  { domain: "Competitors", grain: "Company × claim × source snapshot", keys: "company_id · canonical_url · retrieved_at", sources: "Official product, newsroom, help and release pages", cadence: "Daily / weekly", coverage: "Modules, messaging, industries, evidence changes" },
+  { domain: "Regulations", grain: "Requirement × jurisdiction × effective period", keys: "document_number · CFR citation · jurisdiction", sources: "Federal Register · eCFR · state agencies", cadence: "Daily", coverage: "Lifecycle, applicability, obligation, affected market" },
+  { domain: "Enforcement", grain: "Inspection or case × establishment", keys: "inspection_number · facility_id · agency", sources: "OSHA · MSHA · EPA ECHO · State Plans", cadence: "Daily / periodic", coverage: "Citations, standards, penalties, repeat activity" },
+  { domain: "Injuries", grain: "Case × worker event × establishment", keys: "source_record_id · establishment_id · event_date", sources: "OSHA ITA · Severe Injury · Fatality · BLS SOII", cadence: "Annual / periodic", coverage: "Event, equipment, outcome, narrative, denominator" },
+  { domain: "Sustainability", grain: "Facility or company × obligation × period", keys: "registry_id · program_id · company_id", sources: "EPA ECHO · reporting frameworks · official evidence", cadence: "Source dependent", coverage: "Environmental programs, reporting, vendor capability" },
+  { domain: "Contractor Management", grain: "Buyer workflow × contractor population", keys: "company_id · site_id · contractor_id · workflow", sources: "Official evidence · regulation · controlled internal data", cadence: "Source dependent", coverage: "Prequalification, insurance, access, training, risk" },
+  { domain: "Corporate Activity", grain: "Company event × announcement or filing", keys: "company_id · event_date · accession_or_url", sources: "SEC EDGAR · official releases · approved trade press", cadence: "Near real time / daily", coverage: "M&A, ownership, leadership, product and strategy" },
+];
+
+const sharedDimensions = [
+  { name: "Industry", hierarchy: "NAICS 2 → 3 → 4 → 5 → 6", use: "Markets, enforcement, injuries, regulation, hiring" },
+  { name: "Organization", hierarchy: "Parent → company → establishment → site", use: "Competitors, enforcement, injuries, facilities, customers" },
+  { name: "Geography", hierarchy: "Country → state → county → metro → site", use: "Jurisdiction, economy, enforcement, injury density" },
+  { name: "Time", hierarchy: "Event → effective → reporting → retrieved", use: "Point-in-time comparison and reproducibility" },
+  { name: "Authority", hierarchy: "Federal → state → local → program", use: "Regulation, inspection, enforcement and coverage" },
+  { name: "Product", hierarchy: "Domain → module → workflow → capability", use: "Competitor comparison and market relevance" },
 ];
 
 const productDomains = {
@@ -272,7 +283,7 @@ function ReliabilityBadge({ value }: { value: Reliability }) {
 }
 
 export default function Home() {
-  const [active, setActive] = useState("Intelligence Index");
+  const [active, setActive] = useState("Data Catalog");
   const [selectedId, setSelectedId] = useState(records[0].id);
   const [query, setQuery] = useState("");
   const [industry, setIndustry] = useState("All industries");
@@ -377,7 +388,7 @@ export default function Home() {
   const filtered = useMemo(() => {
     const text = query.toLowerCase().trim();
     return allRecords.filter((record) => {
-      const domainMatch = ["Intelligence Index", "Sources", "Signals"].includes(active)
+      const domainMatch = ["Data Catalog", "Sources", "Signals"].includes(active)
         || (active === "Markets" && record.domain === "Industries")
         || (active === "Enforcement" && record.domain === "Enforcement & Injuries")
         || record.domain === active;
@@ -397,7 +408,7 @@ export default function Home() {
     setActive(label);
     if (label === "Competitors") setFocusMode("competitor");
     if (label !== "Sources") {
-      const first = allRecords.find((record) => label === "Intelligence Index" || record.domain === label || (label === "Markets" && record.domain === "Industries") || (label === "Enforcement" && record.domain === "Enforcement & Injuries"));
+      const first = allRecords.find((record) => label === "Data Catalog" || record.domain === label || (label === "Markets" && record.domain === "Industries") || (label === "Enforcement" && record.domain === "Enforcement & Injuries"));
       if (first) setSelectedId(first.id);
     }
   };
@@ -537,10 +548,11 @@ export default function Home() {
             </section>
           ) : (
             <>
-              {active === "Intelligence Index" && <section className="intelligence-index">
-                <div className="index-intro panel"><div><span className="panel-kicker">Start with a strategic question</span><h2>Investigate the market, not the interface</h2><p>Each pathway preserves the active market, segment, geography, competitor, period, and evidence requirements as you move through the system.</p></div><div className="index-state"><span><b>{sourceRegistry.length}</b> registered sources</span><span><b>{sourceRegistry.filter((source) => source.status === "Live" || source.status === "Ready").length}</b> live or ready</span><span><b>{competitors.length}</b> competitor profiles</span></div></div>
-                <div className="question-grid">{questionPathways.map(({ question, target, evidence, icon: Icon }) => <button className="question-card" key={question} onClick={() => selectNavigation(target)}><span><Icon size={16} /><mark>{target}</mark></span><h3>{question}</h3><p>{evidence}</p><footer>Open investigation <ArrowRight size={13} /></footer></button>)}</div>
-                <div className="index-monitor panel"><div><span className="panel-kicker">System coverage</span><h2>Continuous intelligence requires visible source health</h2></div><div><span><i className="live" /><b>Government feeds</b><small>Regulations and economic indicators connected</small></span><span><i className="mapped" /><b>State enforcement</b><small>State-by-state connector registry planned</small></span><span><i className="access" /><b>EHS hiring</b><small>Licensed job-posting source required</small></span><span><i className="mapped" /><b>Industry publications</b><small>Monitoring and topic taxonomy planned</small></span></div></div>
+              {active === "Data Catalog" && <section className="data-catalog-home">
+                <div className="catalog-summary panel"><div><span className="panel-kicker">Cross-index architecture</span><h2>One evidence system, joined through governed dimensions</h2><p>The interface follows the data: every domain declares its record grain, stable keys, source authority, update cadence, and coverage boundary before analysis is allowed.</p></div><div className="index-state"><span><b>{domainCatalog.length}</b> governed domains</span><span><b>{sharedDimensions.length}</b> shared dimensions</span><span><b>{sourceRegistry.length}</b> source contracts</span></div></div>
+                <div className="catalog-table panel"><div className="catalog-table-row catalog-table-head"><span>Domain</span><span>Record grain</span><span>Join keys</span><span>Primary source layer</span><span>Cadence</span><span>Coverage</span></div>{domainCatalog.map((item) => <button className="catalog-table-row" key={item.domain} onClick={() => selectNavigation(item.domain)}><span><b>{item.domain}</b></span><span>{item.grain}</span><span><code>{item.keys}</code></span><span>{item.sources}</span><span>{item.cadence}</span><span>{item.coverage}<ChevronRight size={13} /></span></button>)}</div>
+                <div className="dimension-register panel"><div className="dimension-register-heading"><span className="panel-kicker">Conformed dimensions</span><h2>Shared keys make every cross-section reproducible</h2><p>These hierarchies persist across tabs. Unknown mappings remain null and visible; they are never guessed into a category.</p></div><div className="dimension-register-list">{sharedDimensions.map((dimension) => <div key={dimension.name}><b>{dimension.name}</b><code>{dimension.hierarchy}</code><span>{dimension.use}</span></div>)}</div></div>
+                <div className="catalog-governance"><span><ShieldCheck size={14} /><b>Provenance required</b> source ID · source record ID · published/effective date · retrieved timestamp</span><span><RefreshCw size={14} /><b>Freshness explicit</b> cadence · last success · lag · revision status</span><span><Network size={14} /><b>Joins governed</b> exact · concordance · entity-resolved · unmatched</span><span><Info size={14} /><b>Denominators preserved</b> population and coverage shown with every rate</span></div>
               </section>}
               {active === "Markets" && <section className="market-navigator">
                 <div className="market-entry-grid">
@@ -592,14 +604,14 @@ export default function Home() {
                 <section className="battlecard-bar"><div><span className="panel-kicker">Evidence-gated output</span><h2>{selectedCompetitor.name} battlecard assembly</h2><p>Exports include sourced company statements and explicit evidence gaps. Unsupported comparisons remain blocked.</p></div><div className="gate-list"><span><Check size={12} /> Official source</span><span><Check size={12} /> Reliability labeled</span><span className="pending">Feature depth review required</span></div><button onClick={exportBattlecard}><Download size={14} /> Export draft battlecard</button></section>
               </>}
               {active === "Regulations" && <section className={`feed-bar ${feedStatus}`}><div><RefreshCw size={15} /><span><b>Federal Register connector</b><small>{feedStatus === "live" ? `${liveRecords.length} live OSHA documents normalized with primary-source links` : feedStatus === "degraded" ? "Live feed unavailable; trusted static records remain available without an error screen" : "Checking the official public feed"}</small></span></div><mark>{feedStatus}</mark></section>}
-              {!(["Intelligence Index", "Markets", "Competitors", "Sustainability", "Contractor Management", "Enforcement", "Signals"].includes(active)) && <section className="filter-bar">
+              {!(["Data Catalog", "Markets", "Competitors", "Sustainability", "Contractor Management", "Enforcement", "Signals"].includes(active)) && <section className="filter-bar">
                 <span><Filter size={14} /> Refine</span>
                 <label>Industry<select value={industry} onChange={(event) => setIndustry(event.target.value)}><option>All industries</option><option>Construction</option><option>Manufacturing</option><option>Energy & Utilities</option></select></label>
                 <label>Reliability<select value={reliability} onChange={(event) => setReliability(event.target.value)}><option>All reliability</option><option>Verified Fact</option><option>Company Statement</option><option>Source Structure</option></select></label>
                 <button onClick={() => { setIndustry("All industries"); setReliability("All reliability"); setQuery(""); }}>Clear filters</button>
               </section>}
 
-              {!(["Intelligence Index", "Markets", "Competitors", "Sustainability", "Contractor Management", "Enforcement", "Signals"].includes(active)) && <section className="evidence-layout">
+              {!(["Data Catalog", "Markets", "Competitors", "Sustainability", "Contractor Management", "Enforcement", "Signals"].includes(active)) && <section className="evidence-layout">
                 <div className="record-browser panel">
                   <div className="record-header"><span>Intelligence record</span><span>Domain</span><span>Reliability</span><span>Retrieved</span></div>
                   <div className="record-list">
