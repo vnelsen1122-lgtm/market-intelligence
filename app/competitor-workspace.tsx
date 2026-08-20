@@ -127,6 +127,7 @@ export function CompetitorWorkspace({ selectedCompetitorId, onSelectCompetitor, 
   const currentTags = unique([...selectedCompetitor.messagingTags, ...selectedIntake.flatMap((record) => record.tags)]);
   const overlap = selectedCompetitor.modules.filter((module) => novaraBaseline.modules.some((baselineModule) => baselineModule.toLowerCase().includes(module.toLowerCase().split(" ")[0]) || module.toLowerCase().includes(baselineModule.toLowerCase().split(" ")[0])));
   const comparisonCompetitors = compareIds.map((id) => competitors.find((competitor) => competitor.id === id)).filter((competitor): competitor is CompetitorProfile => Boolean(competitor));
+  const selectorCompetitors = visibleCompetitors.some((competitor) => competitor.id === selectedCompetitor.id) ? visibleCompetitors : [selectedCompetitor, ...visibleCompetitors];
   const comparisonDomains = competitorDomains.filter((item) => item !== "All capabilities");
   const researchCount = Object.keys(deepCompetitorIntelligence).length;
 
@@ -167,6 +168,7 @@ export function CompetitorWorkspace({ selectedCompetitorId, onSelectCompetitor, 
       <div className="ci-suite-title"><span className="panel-kicker">Competitor suite</span><b>{competitors.length} companies · {researchCount} priority research passes</b></div>
       <label><Search size={13} /><input value={competitorQuery} onChange={(event) => setCompetitorQuery(event.target.value)} placeholder="Company, module, market, message" /></label>
       <select value={archetype} onChange={(event) => setArchetype(event.target.value)}>{competitorArchetypes.map((item) => <option key={item}>{item}</option>)}</select>
+      <select aria-label="Selected competitor" value={selectedCompetitor.id} onChange={(event) => onSelectCompetitor(event.target.value)}>{selectorCompetitors.map((competitor) => <option value={competitor.id} key={competitor.id}>{competitor.name}</option>)}</select>
       <span className="ci-result-count"><b>{visibleCompetitors.length}</b> in scope</span>
     </div>
 
