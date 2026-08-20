@@ -34,7 +34,7 @@ import { useEffect, useMemo, useState } from "react";
 import { competitorArchetypes, competitors } from "./competitor-data";
 import { changeContract, corporateSourceHierarchy, messagingTaxonomy, monitoringJobs } from "./corporate-data";
 import { jurisdictionCounts, jurisdictions } from "./jurisdiction-data";
-import { marketSegments, verticals } from "./market-data";
+import { marketSegments, verticals, type MarketSegment } from "./market-data";
 import { importContract, sourceRegistry } from "./source-registry";
 
 type Reliability = "Verified Fact" | "Company Statement" | "Analyst Inference" | "Source Structure";
@@ -283,6 +283,32 @@ function ReliabilityBadge({ value }: { value: Reliability }) {
   return <span className={`reliability ${reliabilityClass[value]}`}><ShieldCheck size={12} />{value}</span>;
 }
 
+function calculateStructuralIntensity(segment: MarketSegment | undefined) {
+  if (!segment) return null;
+  const environmentTerms = ["environment", "air", "water", "waste", "permit", "emissions", "discharge"];
+  const contractorTerms = ["contractor", "subcontractor", "temporary", "service"];
+  const regulatoryValue = Math.min(100, segment.agencies.length * 14 + segment.obligations.length * 10);
+  const environmentalMatches = segment.obligations.filter((item) => environmentTerms.some((term) => item.toLowerCase().includes(term))).length;
+  const environmentalValue = Math.min(100, environmentalMatches * 28 + (segment.agencies.some((agency) => agency.includes("EPA") || agency.toLowerCase().includes("environment")) ? 24 : 0));
+  const contractorMatches = segment.workforce.filter((item) => contractorTerms.some((term) => item.toLowerCase().includes(term))).length;
+  const contractorValue = Math.min(100, contractorMatches * 35 + (segment.operationalExposure.some((item) => item.toLowerCase().includes("contractor")) ? 30 : 0));
+  const operationalValue = Math.min(100, segment.operationalExposure.length * 20);
+  const measuredWeight = 60;
+  const measuredPoints = regulatoryValue * .25 + environmentalValue * .15 + contractorValue * .10 + operationalValue * .10;
+  return {
+    structuralSignal: Math.round(measuredPoints / measuredWeight * 100),
+    evidenceCoverage: measuredWeight,
+    factors: [
+      { label: "Regulatory breadth", weight: 25, value: regulatoryValue, status: "Mapped structure", evidence: `${segment.agencies.length} agency families and ${segment.obligations.length} obligation groups mapped` },
+      { label: "Enforcement pressure", weight: 20, value: null, status: "Data required", evidence: "Requires normalized inspection, citation, penalty, repeat-visit, and establishment denominators" },
+      { label: "Injury exposure", weight: 20, value: null, status: "Data required", evidence: "Requires injury, severe-injury, fatality, hours-worked, and occupation denominators" },
+      { label: "Environmental obligations", weight: 15, value: environmentalValue, status: "Mapped structure", evidence: `${environmentalMatches} environmental obligation signals plus agency coverage` },
+      { label: "Contractor complexity", weight: 10, value: contractorValue, status: "Mapped structure", evidence: `${contractorMatches} contractor-dependent workforce groups identified` },
+      { label: "Operational complexity", weight: 10, value: operationalValue, status: "Mapped structure", evidence: `${segment.operationalExposure.length} operating exposure groups identified` },
+    ],
+  };
+}
+
 export default function Home() {
   const [active, setActive] = useState("Data Catalog");
   const [selectedId, setSelectedId] = useState(records[0].id);
@@ -293,6 +319,7 @@ export default function Home() {
   const [feedStatus, setFeedStatus] = useState<"loading" | "live" | "degraded">("loading");
   const [selectedVertical, setSelectedVertical] = useState("All markets");
   const [selectedSegment, setSelectedSegment] = useState("All segments");
+  const [comparisonSegmentId, setComparisonSegmentId] = useState("construction-concrete");
   const [selectedGeography, setSelectedGeography] = useState("North America");
   const [selectedJurisdictionCode, setSelectedJurisdictionCode] = useState("CA");
   const [focusMode, setFocusMode] = useState<FocusMode>("market");
@@ -361,32 +388,9 @@ export default function Home() {
     return verticalMatch && segmentMatch;
   }), [selectedSegment, selectedVertical]);
   const activeSegment = useMemo(() => marketSegments.find((segment) => segment.id === selectedSegment), [selectedSegment]);
-  const intensity = useMemo(() => {
-    if (!activeSegment) return null;
-    const environmentTerms = ["environment", "air", "water", "waste", "permit", "emissions", "discharge"];
-    const contractorTerms = ["contractor", "subcontractor", "temporary", "service"];
-    const regulatoryValue = Math.min(100, activeSegment.agencies.length * 14 + activeSegment.obligations.length * 10);
-    const environmentalMatches = activeSegment.obligations.filter((item) => environmentTerms.some((term) => item.toLowerCase().includes(term))).length;
-    const environmentalValue = Math.min(100, environmentalMatches * 28 + (activeSegment.agencies.some((agency) => agency.includes("EPA") || agency.toLowerCase().includes("environment")) ? 24 : 0));
-    const contractorMatches = activeSegment.workforce.filter((item) => contractorTerms.some((term) => item.toLowerCase().includes(term))).length;
-    const contractorValue = Math.min(100, contractorMatches * 35 + (activeSegment.operationalExposure.some((item) => item.toLowerCase().includes("contractor")) ? 30 : 0));
-    const operationalValue = Math.min(100, activeSegment.operationalExposure.length * 20);
-    const measuredWeight = 60;
-    const measuredPoints = regulatoryValue * .25 + environmentalValue * .15 + contractorValue * .10 + operationalValue * .10;
-    const structuralSignal = Math.round(measuredPoints / measuredWeight * 100);
-    return {
-      structuralSignal,
-      evidenceCoverage: measuredWeight,
-      factors: [
-        { label: "Regulatory breadth", weight: 25, value: regulatoryValue, status: "Mapped structure", evidence: `${activeSegment.agencies.length} agency families and ${activeSegment.obligations.length} obligation groups mapped` },
-        { label: "Enforcement pressure", weight: 20, value: null, status: "Data required", evidence: "Requires normalized inspection, citation, penalty, repeat-visit, and establishment denominators" },
-        { label: "Injury exposure", weight: 20, value: null, status: "Data required", evidence: "Requires injury, severe-injury, fatality, hours-worked, and occupation denominators" },
-        { label: "Environmental obligations", weight: 15, value: environmentalValue, status: "Mapped structure", evidence: `${environmentalMatches} environmental obligation signals plus agency coverage` },
-        { label: "Contractor complexity", weight: 10, value: contractorValue, status: "Mapped structure", evidence: `${contractorMatches} contractor-dependent workforce groups identified` },
-        { label: "Operational complexity", weight: 10, value: operationalValue, status: "Mapped structure", evidence: `${activeSegment.operationalExposure.length} operating exposure groups identified` },
-      ],
-    };
-  }, [activeSegment]);
+  const comparisonSegment = useMemo(() => marketSegments.find((segment) => segment.id === comparisonSegmentId), [comparisonSegmentId]);
+  const intensity = useMemo(() => calculateStructuralIntensity(activeSegment), [activeSegment]);
+  const comparisonIntensity = useMemo(() => calculateStructuralIntensity(comparisonSegment), [comparisonSegment]);
 
   const filtered = useMemo(() => {
     const text = query.toLowerCase().trim();
@@ -576,6 +580,7 @@ export default function Home() {
                   <div className="factor-grid">{intensity.factors.map((factor) => <article className={factor.value === null ? "factor-card pending" : "factor-card"} key={factor.label}><header><span>{factor.label}<small>{factor.weight}% weight</small></span>{factor.value === null ? <mark>Not scored</mark> : <strong>{factor.value}</strong>}</header>{factor.value !== null && <div className="factor-bar"><i style={{ width: `${factor.value}%` }} /></div>}<p>{factor.evidence}</p><footer>{factor.value === null ? <Info size={12} /> : <Check size={12} />}{factor.status}</footer></article>)}</div>
                   <div className="intensity-policy"><ShieldCheck size={17} /><span><b>Trust rule</b> A full compliance-intensity score cannot publish until required sources, denominators, periods, and geography coverage are recorded for every weighted factor.</span></div>
                 </div>}
+                {activeSegment && intensity && comparisonSegment && comparisonIntensity && <div className="segment-comparison panel"><div className="comparison-heading"><div><span className="panel-kicker">Cross-segment comparison</span><h2>{activeSegment.segment} versus</h2></div><label>Comparison segment<select value={comparisonSegmentId} onChange={(event) => setComparisonSegmentId(event.target.value)}>{marketSegments.map((segment) => <option value={segment.id} key={segment.id}>{segment.segment}</option>)}</select></label></div><div className="comparison-table"><div className="comparison-row comparison-head"><span>Factor</span><span>{activeSegment.segment}</span><span>{comparisonSegment.segment}</span><span>Evidence state</span></div>{intensity.factors.map((factor, index) => { const comparisonFactor = comparisonIntensity.factors[index]; return <div className="comparison-row" key={factor.label}><span><b>{factor.label}</b><small>{factor.weight}% model weight</small></span><span>{factor.value === null ? <mark>Not scored</mark> : <strong>{factor.value}</strong>}</span><span>{comparisonFactor.value === null ? <mark>Not scored</mark> : <strong>{comparisonFactor.value}</strong>}</span><span>{factor.value === null || comparisonFactor.value === null ? "Denominator-backed source required" : "Mapped structural evidence"}</span></div>; })}</div><div className="comparison-footer"><span><b>{activeSegment.segment}</b><strong>{intensity.structuralSignal}</strong><small>{intensity.evidenceCoverage}% evidence coverage</small></span><span><b>{comparisonSegment.segment}</b><strong>{comparisonIntensity.structuralSignal}</strong><small>{comparisonIntensity.evidenceCoverage}% evidence coverage</small></span><p><Info size={13} /> Structural signals can be compared; enforcement and injury density remain blocked until both segments use matched periods, geographies, populations, and source coverage.</p></div></div>}
               </section>}
               {activeProductDomain && <section className="product-domain">
                 <div className="domain-brief panel"><div><span className="panel-kicker">Independent product intelligence domain</span><h2>{active}</h2><p>This workspace has its own buyers, regulations, workflows, specialist competitors, evidence sources, and market signals. It is connected to core EHS intelligence without being collapsed into it.</p></div><div className="domain-status"><span><b>Mapped</b> domain model</span><span><b>Next</b> live connectors</span></div></div>
