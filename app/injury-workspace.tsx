@@ -141,6 +141,7 @@ export function InjuryWorkspace() {
   }, [sector, subsector]);
 
   const activeFilters = [sector, subsector, state, event, nature, body, source, outcome].filter((value) => !value.startsWith("All "));
+  const activeFilterCount = activeFilters.length + (fromYear !== Number(injuryDataset.dimensions.years[0]) || throughYear !== Number(injuryDataset.dimensions.years.at(-1)) ? 1 : 0);
   const clearFilters = () => { setSector("All sectors"); setSubsector("All subsectors"); setState("All states"); setEvent("All events"); setNature("All injury natures"); setBody("All body regions"); setSource("All sources"); setOutcome("All outcomes"); setFromYear(Number(injuryDataset.dimensions.years[0])); setThroughYear(Number(injuryDataset.dimensions.years.at(-1))); };
   const choose = (key: FilterKey, value: string) => {
     if (key === "sector") { setSector(value); setSubsector("All subsectors"); }
@@ -164,8 +165,23 @@ export function InjuryWorkspace() {
       <div className="injury-source-note"><ShieldCheck size={14} /><span><b>{formatNumber(injuryDataset.meta.sourceRows)}</b> de-identified records · {injuryDataset.meta.from.slice(0, 4)}–{injuryDataset.meta.through.slice(0, 4)}</span></div>
     </div>
 
+    <div className="injury-metrics">
+      <article className="panel"><span>Reported cases</span><strong>{formatNumber(totals.cases)}</strong><small>{formatShare(totals.cases, injuryDataset.meta.cases)} of historical file</small></article>
+      <article className="panel"><span>Hospitalized employees</span><strong>{formatNumber(totals.hospitalized)}</strong><small>{totals.cases ? (totals.hospitalized / totals.cases * 100).toFixed(1) : "0.0"} per 100 reported cases</small></article>
+      <article className="panel"><span>Amputations reported</span><strong>{formatNumber(totals.amputations)}</strong><small>{totals.cases ? (totals.amputations / totals.cases * 100).toFixed(1) : "0.0"} per 100 reported cases</small></article>
+      <article className="panel"><span>Inspection-linked</span><strong>{formatNumber(totals.inspectionLinked)}</strong><small>{formatShare(totals.inspectionLinked, Math.max(totals.cases, 1))} of filtered cases</small></article>
+    </div>
+
+    <div className="injury-overview-label"><div><span className="section-label">Visual overview</span><h3>Your current cross-section</h3></div><div className="injury-overview-actions"><small>This overview stays visible while you explore details.</small><button onClick={clearFilters} disabled={activeFilterCount === 0}><RefreshCw size={13} /> Reset dashboard{activeFilterCount > 0 && <mark>{activeFilterCount}</mark>}</button></div></div>
+    <div className="injury-view-grid landscape">
+      <article className="panel injury-trend"><header><div><span className="section-label">Time profile</span><h3>Reported cases by year</h3></div><mark>Counts, not rates</mark></header><div className="injury-year-chart">{trend.map((item) => <button onClick={() => { setFromYear(item.year); setThroughYear(item.year); }} key={item.year}><span><i style={{ height: `${Math.max(5, item.cases / maximumTrend * 100)}%` }} /></span><b>{item.year}</b><small>{formatNumber(item.cases)}</small></button>)}</div></article>
+      <article className="panel injury-ranked"><header><div><span className="section-label">Industry concentration</span><h3>Cases by NAICS sector</h3></div><Factory size={17} /></header><RankedBars items={sectorCounts} total={sectorTotal} active={sector} onSelect={(label) => choose("sector", label)} limit={9} /></article>
+      <article className="panel injury-ranked"><header><div><span className="section-label">Mechanism profile</span><h3>How incidents happen</h3></div><BarChart3 size={17} /></header><RankedBars items={eventCounts} total={eventTotal} active={event} onSelect={(label) => choose("event", label)} limit={8} /></article>
+      <article className="panel injury-signal-card"><header><div><span className="section-label">Narrative evidence</span><h3>Recurring real-world signals</h3></div><Sparkles size={17} /></header><div className="injury-signal-cloud">{narrativeSignals.map((signal, index) => <span style={{ fontSize: `${Math.max(10, 17 - index * .45)}px` }} key={signal.signal}><b>{signal.signal}</b><small>{formatNumber(signal.count)}</small></span>)}</div><footer>Terms are deterministic matches from narratives; raw text is not included in the application.</footer></article>
+    </div>
+
     <div className="injury-control-panel panel">
-      <div className="injury-control-title"><Filter size={14} /><span>Cross-filter</span>{activeFilters.length > 0 && <mark>{activeFilters.length} active</mark>}<button onClick={clearFilters}><RefreshCw size={12} /> Reset</button></div>
+      <div className="injury-control-title"><Filter size={14} /><span>Refine this dashboard</span>{activeFilterCount > 0 && <mark>{activeFilterCount} active</mark>}<button onClick={clearFilters} disabled={activeFilterCount === 0}><RefreshCw size={12} /> Reset</button></div>
       <div className="injury-controls">
         <label>Sector<select value={sector} onChange={(event) => choose("sector", event.target.value)}><option>All sectors</option>{sectorCounts.map((item) => <option key={item.label}>{item.label}</option>)}</select></label>
         <label>Subsector<select value={subsector} onChange={(event) => choose("subsector", event.target.value)}><option>All subsectors</option>{subsectorCounts.map((item) => <option key={item.label}>{item.label}</option>)}</select></label>
@@ -176,21 +192,6 @@ export function InjuryWorkspace() {
         <label>Through<select value={throughYear} onChange={(event) => setThroughYear(Math.max(Number(event.target.value), fromYear))}>{injuryDataset.dimensions.years.map((year) => <option key={year}>{year}</option>)}</select></label>
       </div>
       {activeFilters.length > 0 && <div className="injury-active-filters">{activeFilters.map((item) => <span key={item}>{item}</span>)}</div>}
-    </div>
-
-    <div className="injury-metrics">
-      <article className="panel"><span>Reported cases</span><strong>{formatNumber(totals.cases)}</strong><small>{formatShare(totals.cases, injuryDataset.meta.cases)} of historical file</small></article>
-      <article className="panel"><span>Hospitalized employees</span><strong>{formatNumber(totals.hospitalized)}</strong><small>{totals.cases ? (totals.hospitalized / totals.cases * 100).toFixed(1) : "0.0"} per 100 reported cases</small></article>
-      <article className="panel"><span>Amputations reported</span><strong>{formatNumber(totals.amputations)}</strong><small>{totals.cases ? (totals.amputations / totals.cases * 100).toFixed(1) : "0.0"} per 100 reported cases</small></article>
-      <article className="panel"><span>Inspection-linked</span><strong>{formatNumber(totals.inspectionLinked)}</strong><small>{formatShare(totals.inspectionLinked, Math.max(totals.cases, 1))} of filtered cases</small></article>
-    </div>
-
-    <div className="injury-overview-label"><div><span className="section-label">Visual overview</span><h3>Your current cross-section</h3></div><small>This overview stays visible while you explore details.</small></div>
-    <div className="injury-view-grid landscape">
-      <article className="panel injury-trend"><header><div><span className="section-label">Time profile</span><h3>Reported cases by year</h3></div><mark>Counts, not rates</mark></header><div className="injury-year-chart">{trend.map((item) => <button onClick={() => { setFromYear(item.year); setThroughYear(item.year); }} key={item.year}><span><i style={{ height: `${Math.max(5, item.cases / maximumTrend * 100)}%` }} /></span><b>{item.year}</b><small>{formatNumber(item.cases)}</small></button>)}</div></article>
-      <article className="panel injury-ranked"><header><div><span className="section-label">Industry concentration</span><h3>Cases by NAICS sector</h3></div><Factory size={17} /></header><RankedBars items={sectorCounts} total={sectorTotal} active={sector} onSelect={(label) => choose("sector", label)} limit={9} /></article>
-      <article className="panel injury-ranked"><header><div><span className="section-label">Mechanism profile</span><h3>How incidents happen</h3></div><BarChart3 size={17} /></header><RankedBars items={eventCounts} total={eventTotal} active={event} onSelect={(label) => choose("event", label)} limit={8} /></article>
-      <article className="panel injury-signal-card"><header><div><span className="section-label">Narrative evidence</span><h3>Recurring real-world signals</h3></div><Sparkles size={17} /></header><div className="injury-signal-cloud">{narrativeSignals.map((signal, index) => <span style={{ fontSize: `${Math.max(10, 17 - index * .45)}px` }} key={signal.signal}><b>{signal.signal}</b><small>{formatNumber(signal.count)}</small></span>)}</div><footer>Terms are deterministic matches from narratives; raw text is not included in the application.</footer></article>
     </div>
 
     <section className="injury-detail-section">
