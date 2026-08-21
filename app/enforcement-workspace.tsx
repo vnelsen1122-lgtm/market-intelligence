@@ -13,7 +13,8 @@ export function EnforcementWorkspace() {
   const [year, setYear] = useState("All years");
   const [selectedActivity, setSelectedActivity] = useState<string | null>(null);
   const cases = useMemo(() => enforcementDataset.cases.filter((item) => (state === "All states" || item.state === state) && (sector === "All sectors" || item.sector === sector) && (year === "All years" || item.issuanceDate.startsWith(year))), [sector, state, year]);
-  const selected = cases.find((item) => item.activityNumber === selectedActivity) ?? cases[0];
+  const selectedCase = cases.find((item) => item.activityNumber === selectedActivity) ?? cases[0];
+  const selected = selectedCase ? { ...selectedCase, inspectionNumber: String(selectedCase.inspectionNumber).replace(/\..*$/, "") } : undefined;
   const totalPenalty = cases.reduce((sum, item) => sum + item.initialPenalty, 0);
   const violationEvents = cases.reduce((sum, item) => sum + item.violationEvents, 0);
   const matched = cases.filter((item) => item.matchedInspection).length;

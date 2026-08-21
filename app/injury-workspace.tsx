@@ -215,7 +215,7 @@ export function InjuryWorkspace() {
     </div>
 
     <div className="injury-control-panel panel">
-      <div className="injury-control-title"><Filter size={14} /><span>Refine this dashboard</span>{activeFilterCount > 0 && <mark>{activeFilterCount} active</mark>}<button onClick={clearFilters} disabled={activeFilterCount === 0}><RefreshCw size={12} /> Reset</button></div>
+      <div className="injury-control-title"><Filter size={14} /><span>Refine this dashboard</span>{activeFilterCount > 0 && <mark>{activeFilterCount} active</mark>}</div>
       <div className="injury-controls">
         <label>Sector<select value={sector} onChange={(event) => choose("sector", event.target.value)}><option>All sectors</option>{sectorCounts.map((item) => <option key={item.label}>{item.label}</option>)}</select></label>
         <label>Subsector<select value={subsector} onChange={(event) => choose("subsector", event.target.value)}><option>All subsectors</option>{subsectorCounts.map((item) => <option key={item.label}>{item.label}</option>)}</select></label>

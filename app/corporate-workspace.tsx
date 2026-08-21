@@ -11,6 +11,7 @@ import {
 } from "./corporate-data";
 
 const referenceDate = new Date("2026-08-20T00:00:00Z");
+const latestCorporateEventId = [...corporateEvents].sort((left, right) => right.announcedAt.localeCompare(left.announcedAt))[0].id;
 type View = "Market activity" | "Brand lineage" | "Ownership map" | "Research workflows";
 
 function cutoff(months: number) {
@@ -91,7 +92,7 @@ export function CorporateWorkspace() {
   const [windowMonths, setWindowMonths] = useState(36);
   const [eventType, setEventType] = useState("All events");
   const [domain, setDomain] = useState("All domains");
-  const [selectedId, setSelectedId] = useState(corporateEvents[0].id);
+  const [selectedId, setSelectedId] = useState(latestCorporateEventId);
 
   const filtered = useMemo(() => corporateEvents.filter((event) => {
     const inWindow = new Date(`${event.announcedAt}T00:00:00Z`) >= cutoff(windowMonths);
@@ -109,7 +110,7 @@ export function CorporateWorkspace() {
     setWindowMonths(36);
     setEventType("All events");
     setDomain("All domains");
-    setSelectedId(corporateEvents[0].id);
+    setSelectedId(latestCorporateEventId);
   };
 
   return <section className="corporate-atlas">
