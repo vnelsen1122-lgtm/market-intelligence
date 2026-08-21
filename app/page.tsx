@@ -146,7 +146,6 @@ type IntelligenceFeed = {
 };
 
 const navigation = [
-  { label: "Data", icon: Database },
   { label: "Competitors", icon: Building2 },
   { label: "Markets", icon: Factory },
   { label: "Injuries", icon: HardHat },
@@ -154,6 +153,7 @@ const navigation = [
   { label: "Regulations", icon: BookOpenCheck },
   { label: "Enforcement", icon: ShieldCheck },
   { label: "Corporate Activity", icon: Network },
+  { label: "Data", icon: Database },
 ];
 
 const dataNavigation = [

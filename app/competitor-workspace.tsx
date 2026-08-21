@@ -280,10 +280,9 @@ export function CompetitorWorkspace({ selectedCompetitorId, onSelectCompetitor }
 
     <div className={showAllCompetitors ? "ci-company-strip expanded" : "ci-company-strip"} aria-label="Competitors in scope">
       {visibleCompetitors.map((competitor) => {
-        const deep = deepCompetitorIntelligence[competitor.id];
         return <button className={selectedCompetitor.id === competitor.id ? "selected" : ""} onClick={() => { onSelectCompetitor(competitor.id); setShowAllCompetitors(false); }} key={competitor.id}>
           <span className="ci-mini-logo"><img src={faviconFor(competitor.officialUrl)} alt="" onError={(event) => { event.currentTarget.style.display = "none"; }} />{competitor.name.slice(0, 2).toUpperCase()}</span>
-          <span><b>{competitor.name}</b><small>{deep?.buyingMotion ?? competitor.archetype}</small></span>
+          <b>{competitor.name}</b>
           <ChevronRight size={12} />
         </button>;
       })}
