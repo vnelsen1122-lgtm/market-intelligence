@@ -34,7 +34,6 @@ import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import { buildComparisonChecks } from "./comparison-contracts";
 import { competitors } from "./competitor-data";
-import { changeContract, corporateSourceHierarchy, messagingTaxonomy, monitoringJobs } from "./corporate-data";
 import { jurisdictionCounts, jurisdictions } from "./jurisdiction-data";
 import { marketSegments, verticals, type MarketSegment } from "./market-data";
 import { importContract, sourceRegistry } from "./source-registry";
@@ -68,6 +67,14 @@ const EnforcementWorkspace = dynamic(
   {
     ssr: false,
     loading: () => <section className="panel loading-state">Loading enforcement intelligence…</section>,
+  },
+);
+
+const CorporateWorkspace = dynamic(
+  () => import("./corporate-workspace").then((module) => module.CorporateWorkspace),
+  {
+    ssr: false,
+    loading: () => <section className="panel loading-state">Loading corporate activity…</section>,
   },
 );
 
@@ -566,7 +573,7 @@ export default function Home() {
         </header>
 
         <div className={`content intelligence-content${active === "Competitors" ? " competitor-content" : active === "Injuries" ? " injury-content" : ""}`}>
-          {!["Competitors", "Injuries"].includes(active) && <section className="workspace-heading">
+          {!["Competitors", "Injuries", "Corporate Activity"].includes(active) && <section className="workspace-heading">
             <div><h1>{active}</h1></div>
             {!["Competitors", "Injuries"].includes(active) && <div className="workspace-meta"><span><b>{active === "Sources" ? sources.length : active === "Data Operations" ? sourceRegistry.length : filtered.length}</b> {active === "Data Operations" ? "registered sources" : "records in view"}</span><button onClick={resetWorkspace}><RefreshCw size={14} /> Reset view</button></div>}
           </section>}
@@ -609,12 +616,7 @@ export default function Home() {
           ) : active === "Injuries" ? (
             <InjuryWorkspace />
           ) : active === "Corporate Activity" ? (
-            <section className="corporate-monitor">
-              <div className="operations-hero panel"><div><span className="panel-kicker">Corporate intelligence control plane</span><h2>Transactions and messaging changes, evidence first</h2><p>Monitors identify possible change. Primary filings and company releases establish facts. Analyst implications remain separately labeled and reviewable.</p></div><div className="operations-metrics"><span><b>{competitors.length}</b> companies</span><span><b>{monitoringJobs.length}</b> monitor jobs</span><span><b>{messagingTaxonomy.length}</b> message themes</span></div></div>
-              <div className="monitor-grid"><div className="panel monitor-jobs"><div className="operation-heading"><span><i><RefreshCw size={18} /></i><span><b>Collection jobs</b><small>Discovery never publishes a transaction fact</small></span></span><mark>Source-gated</mark></div>{monitoringJobs.map((job) => <article key={job.name}><span><b>{job.name}</b><small>{job.coverage}</small></span><span>{job.cadence}<small>{job.method}</small></span><mark className={job.status.toLowerCase()}>{job.status}</mark></article>)}</div><div className="panel messaging-monitor"><div className="operation-heading"><span><i><Radar size={18} /></i><span><b>Messaging-change taxonomy</b><small>Tags explain what changed—not why</small></span></span><mark>Versioned</mark></div><div>{messagingTaxonomy.map((tag) => <span key={tag}>{tag}</span>)}</div><p>Page snapshots retain URL, timestamp, content hash, changed terms, source excerpt, and human-review state.</p></div></div>
-              <div className="source-hierarchy panel"><div className="catalog-intro"><div><span className="panel-kicker">Evidence hierarchy</span><h2>Corporate activity publication rules</h2></div><p>Trade coverage such as EHS Today is valuable for discovery, but acquisition facts are confirmed against a filing or official company release.</p></div>{corporateSourceHierarchy.map((source) => <article key={source.level}><strong>{source.level}</strong><span><b>{source.label}</b><small>{source.examples}</small></span><p>{source.use}</p></article>)}</div>
-              <div className="change-contract panel"><div><span className="panel-kicker">Messaging snapshot contract</span><h2>Reproducible change records</h2></div><div>{changeContract.map((field) => <code key={field}>{field}</code>)}</div></div>
-            </section>
+            <CorporateWorkspace />
           ) : active === "Sources" ? (
             <section className="source-catalog panel">
               <div className="catalog-intro"><div><span className="panel-kicker">System of record</span><h2>Source catalog & coverage</h2></div><p>Connectors will fail quietly into the last successful snapshot, while freshness and coverage gaps remain visible here.</p></div>
