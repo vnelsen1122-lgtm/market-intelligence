@@ -23,8 +23,8 @@ export type CorporateEvent = {
   announcedAt: string;
   company: string;
   counterparty: string;
-  type: "Acquisition" | "Investment" | "Separation";
-  status: "Announced" | "Closed" | "Operating transition";
+  type: "Acquisition" | "Investment" | "Separation" | "Rebrand" | "Divestiture" | "Integration" | "Merger";
+  status: "Announced" | "Closed" | "Operating transition" | "Rebranded" | "Standalone" | "Integrated";
   domain: "Core EHS" | "Contractor Management" | "Sustainability" | "Occupational Health" | "Chemical & Product Compliance" | "Environmental Intelligence" | "Crisis Readiness";
   geography: string;
   headline: string;
@@ -34,6 +34,11 @@ export type CorporateEvent = {
   sourceName: string;
   sourceUrl: string;
   sourceTier: "Official company" | "Official investor" | "Regulatory filing";
+  formerName?: string;
+  currentIdentity?: string;
+  owner?: string;
+  integrationState?: "Brand retained" | "Absorbed" | "Standalone" | "Integration pending" | "Unified platform";
+  signalTags?: string[];
 };
 
 export const corporateEvents: CorporateEvent[] = [
@@ -292,4 +297,176 @@ export const corporateEvents: CorporateEvent[] = [
     sourceUrl: "https://sphera.com/company/news/sphera-acquires-supplyshift/",
     sourceTier: "Official company",
   },
+  {
+    id: "mitti-rebrand-2026",
+    announcedAt: "2026-08-11",
+    company: "Mitti",
+    counterparty: "SafetyCulture",
+    type: "Rebrand",
+    status: "Rebranded",
+    domain: "Core EHS",
+    geography: "Global",
+    headline: "SafetyCulture becomes Mitti",
+    fact: "SafetyCulture adopted the Mitti name and repositioned the company around an integrated frontline-operations platform spanning software, hardware, consumables, insurance, and AI.",
+    strategicThesis: "Expand the category from safety software into a broader operating system for frontline work.",
+    boardImplication: "Competitive tracking must follow the Mitti identity and test whether the broader platform creates meaningful cross-product adoption beyond the legacy inspection franchise.",
+    sourceName: "Mitti announcement",
+    sourceUrl: "https://mitti.com/media-releases/safetyculture-becomes-mitti-unveiling-a-platform-built-for-the-future-of-frontline-work",
+    sourceTier: "Official company",
+    formerName: "SafetyCulture",
+    currentIdentity: "Mitti",
+    integrationState: "Unified platform",
+    signalTags: ["name change", "category expansion", "frontline operations", "AI"],
+  },
+  {
+    id: "pureehs-carveout-2026",
+    announcedAt: "2026-04-02",
+    company: "Peak Rock Capital",
+    counterparty: "UL Solutions EHS software business",
+    type: "Divestiture",
+    status: "Standalone",
+    domain: "Occupational Health",
+    geography: "North America",
+    headline: "UL Solutions EHS software becomes PureEHS",
+    fact: "Peak Rock completed its acquisition of UL Solutions' Employee Health and Safety software business and launched PureEHS as a standalone company combining PureOHS, OHM, SYSTOC, and LearnShare.",
+    strategicThesis: "Create a focused EHS, occupational-health, clinical, and training platform from a corporate carve-out.",
+    boardImplication: "PureEHS is a newly independent competitor with sponsor-backed capacity and an installed base; product investment and customer retention are the immediate diligence questions.",
+    sourceName: "Peak Rock announcement",
+    sourceUrl: "https://www.peakrockcapital.com/images/news/pdf/Peak%20Rock%20Capital%20affiliate%20completes%20acquisition%20of%20the%20Employee%20Health%20and%20Safety%20software%20business%20of%20UL%20Solutions.pdf",
+    sourceTier: "Official investor",
+    formerName: "UL Solutions EHS software business",
+    currentIdentity: "PureEHS",
+    owner: "Peak Rock Capital",
+    integrationState: "Standalone",
+    signalTags: ["carve-out", "new competitor", "occupational health", "training"],
+  },
+  {
+    id: "safetyculture-twine-2026",
+    announcedAt: "2026-04-07",
+    company: "SafetyCulture",
+    counterparty: "Twine team",
+    type: "Acquisition",
+    status: "Closed",
+    domain: "Core EHS",
+    geography: "Global",
+    headline: "SafetyCulture acquires Twine team",
+    fact: "SafetyCulture acquired the Twine team to accelerate its agentic platform ambitions and AI product development.",
+    strategicThesis: "Acquire specialized AI talent rather than a standalone workflow product.",
+    boardImplication: "This is a capability acquisition; evidence should be sought in shipped agents, workflow automation, and measurable product adoption—not announcement language alone.",
+    sourceName: "Mitti announcement",
+    sourceUrl: "https://mitti.com/media-releases/safetyculture-acquires-twine-to-accelerate-agentic-platform-ambitions",
+    sourceTier: "Official company",
+    integrationState: "Absorbed",
+    signalTags: ["acqui-hire", "agentic AI", "product acceleration"],
+  },
+  {
+    id: "alcumus-veriforce-merger-2025",
+    announcedAt: "2025-06-30",
+    company: "Veriforce",
+    counterparty: "Alcumus",
+    type: "Merger",
+    status: "Operating transition",
+    domain: "Contractor Management",
+    geography: "Global",
+    headline: "Alcumus merges with Veriforce",
+    fact: "Apax reports that Alcumus merged with Veriforce in 2025, joining large contractor, supplier, certification, and safety networks under common ownership.",
+    strategicThesis: "Combine network scale, contractor qualification, supply-chain assurance, and EHS services across regions.",
+    boardImplication: "The resulting network is strategically important, but brand, product, and customer migration should be tracked separately from sponsor claims about scale.",
+    sourceName: "Apax portfolio record",
+    sourceUrl: "https://www.apax.com/partnerships/alcumus/",
+    sourceTier: "Official investor",
+    owner: "Apax Partners",
+    integrationState: "Integration pending",
+    signalTags: ["network consolidation", "contractor management", "supplier risk"],
+  },
+  {
+    id: "evotix-divestiture-2024",
+    announcedAt: "2024-10-23",
+    company: "Evotix",
+    counterparty: "SAI360",
+    type: "Divestiture",
+    status: "Standalone",
+    domain: "Core EHS",
+    geography: "Global",
+    headline: "Evotix becomes standalone after SAI360 divestiture",
+    fact: "SAI360 completed the divestiture of its EHS&S business to Evotix, which became a standalone company in Symphony Technology Group's portfolio and launched a refreshed identity.",
+    strategicThesis: "Restore a singular EHS&S operating focus under a dedicated brand and sponsor structure.",
+    boardImplication: "Evotix should be evaluated as an independent platform, with renewed attention to investment pace, packaging, AI delivery, and enterprise retention.",
+    sourceName: "Evotix announcement",
+    sourceUrl: "https://www.evotix.com/news-and-press/evotix-concludes-divestiture-from-sai360-with-unified-brand-identity",
+    sourceTier: "Official company",
+    formerName: "SAI360 EHS&S business",
+    currentIdentity: "Evotix",
+    owner: "Symphony Technology Group",
+    integrationState: "Standalone",
+    signalTags: ["divestiture", "standalone", "brand refresh"],
+  },
+  {
+    id: "sphera-scrm-integration-2024",
+    announcedAt: "2024-06-03",
+    company: "Sphera",
+    counterparty: "riskmethods + SupplyShift",
+    type: "Integration",
+    status: "Integrated",
+    domain: "Sustainability",
+    geography: "Global",
+    headline: "riskmethods and SupplyShift become Sphera SCRM",
+    fact: "Sphera brought the riskmethods and SupplyShift capabilities together under the Sphera Supply Chain Risk Management identity.",
+    strategicThesis: "Unify supplier risk, mapping, sustainability, and responsible-sourcing capabilities into one market-facing platform.",
+    boardImplication: "This is stronger integration evidence than an acquisition announcement because the products are being presented through a shared solution identity.",
+    sourceName: "Sphera integration page",
+    sourceUrl: "https://sphera.com/riskmethods-supplyshift-are-now-sphera-scrm/",
+    sourceTier: "Official company",
+    formerName: "riskmethods + SupplyShift",
+    currentIdentity: "Sphera SCRM",
+    owner: "Blackstone",
+    integrationState: "Unified platform",
+    signalTags: ["product integration", "supply-chain risk", "brand absorption"],
+  },
+];
+
+export type BrandLineage = {
+  id: string;
+  from: string;
+  to: string;
+  effective: string;
+  transition: string;
+  state: "Rebranded" | "Standalone" | "Absorbed" | "Unified";
+  sourceUrl: string;
+};
+
+export const brandLineages: BrandLineage[] = [
+  { id: "safetyculture-mitti", from: "SafetyCulture", to: "Mitti", effective: "Aug 2026", transition: "Company-wide rebrand and category expansion", state: "Rebranded", sourceUrl: "https://mitti.com/media-releases/safetyculture-becomes-mitti-unveiling-a-platform-built-for-the-future-of-frontline-work" },
+  { id: "kpa-novara", from: "KPA Flex + Risk Management Center", to: "Novara", effective: "Jan 2026", transition: "Software businesses separated from automotive-focused KPA", state: "Standalone", sourceUrl: "https://novara.com/blog/kpa-separates-businesses-launching-novara-to-serve-high-risk-industries/" },
+  { id: "ul-pureehs", from: "UL Solutions EHS software", to: "PureEHS", effective: "Apr 2026", transition: "Sponsor-backed carve-out retaining four product lines", state: "Standalone", sourceUrl: "https://www.peakrockcapital.com/images/news/pdf/Peak%20Rock%20Capital%20affiliate%20completes%20acquisition%20of%20the%20Employee%20Health%20and%20Safety%20software%20business%20of%20UL%20Solutions.pdf" },
+  { id: "sai-evotix", from: "SAI360 EHS&S", to: "Evotix", effective: "Oct 2024", transition: "Divestiture and refreshed standalone identity", state: "Standalone", sourceUrl: "https://www.evotix.com/news-and-press/evotix-concludes-divestiture-from-sai360-with-unified-brand-identity" },
+  { id: "constructsecure-highwire", from: "ConstructSecure", to: "Highwire → Veriforce", effective: "2022–2025", transition: "Rebrand followed by acquisition into contractor network", state: "Absorbed", sourceUrl: "https://veriforce.com/company/press-room/veriforce-acquires-highwire-expanding-leadership-in-contractor-risk-management" },
+  { id: "processmap-ideagen", from: "ProcessMAP", to: "Ideagen EHS", effective: "2022–present", transition: "EHS platform combined into Ideagen portfolio", state: "Absorbed", sourceUrl: "https://www.ideagen.com/company/news/ideagen-and-processmap-to-combine-their-strengths-to-create-a-world-leading-health-and-safety-software-solution" },
+  { id: "riskmethods-sphera", from: "riskmethods + SupplyShift", to: "Sphera SCRM", effective: "2024", transition: "Acquired capabilities unified into one SCRM solution", state: "Unified", sourceUrl: "https://sphera.com/riskmethods-supplyshift-are-now-sphera-scrm/" },
+  { id: "medgate-cority", from: "Medgate", to: "Cority", effective: "2017–present", transition: "Corporate rebrand retained as current EHS platform identity", state: "Rebranded", sourceUrl: "https://www.cority.com/news-media/medgate-rebrands-as-cority/" },
+];
+
+export type OwnershipGroup = {
+  sponsor: string;
+  platforms: string[];
+  relationship: string;
+  watch: string;
+  sourceUrl: string;
+};
+
+export const ownershipGroups: OwnershipGroup[] = [
+  { sponsor: "Apax Partners", platforms: ["Veriforce", "Alcumus"], relationship: "Merged operating network", watch: "Brand convergence, network interoperability, geographic cross-sell", sourceUrl: "https://www.apax.com/partnerships/alcumus/" },
+  { sponsor: "Hg", platforms: ["Ideagen"], relationship: "Growth partnership", watch: "Acquisition cadence, EHS specialization, integration of acquired products", sourceUrl: "https://www.ideagen.com/company/news/ideagen-secures-partnership-with-hg-to-support-further-growth-as-a-regulatory-and-compliance-software-leader" },
+  { sponsor: "Blackstone", platforms: ["Sphera"], relationship: "Control investment", watch: "EHS, ESG, product stewardship, and supply-chain platform convergence", sourceUrl: "https://sphera.com/company/news/blackstone-to-acquire-sphera/" },
+  { sponsor: "EQT", platforms: ["Avetta", "AMCS"], relationship: "Separate portfolio companies", watch: "Do not infer integration; monitor adjacent contractor, ESG, and industrial software theses", sourceUrl: "https://eqtgroup.com/news/eqt-to-acquire-avetta-a-global-leader-in-supply-chain-risk-management-software-2024-04-02" },
+  { sponsor: "Peak Rock Capital", platforms: ["PureEHS"], relationship: "Corporate carve-out", watch: "Customer retention, independent roadmap, AI investment, add-on acquisitions", sourceUrl: "https://www.peakrockcapital.com/images/news/pdf/Peak%20Rock%20Capital%20affiliate%20completes%20acquisition%20of%20the%20Employee%20Health%20and%20Safety%20software%20business%20of%20UL%20Solutions.pdf" },
+  { sponsor: "Symphony Technology Group", platforms: ["Evotix"], relationship: "Standalone portfolio company", watch: "Operating investment after SAI360 divestiture", sourceUrl: "https://www.evotix.com/news-and-press/evotix-concludes-divestiture-from-sai360-with-unified-brand-identity" },
+];
+
+export const corporateWorkflows = [
+  { name: "Deal and identity monitor", cadence: "Daily", coverage: "Newsrooms, sponsor portfolios, filings, acquired-company redirects", process: "Discover → resolve aliases → verify primary source → classify event", output: "Verified event + lineage update", status: "Research mapped" },
+  { name: "Transaction lifecycle tracker", cadence: "Weekly", coverage: "Announced, closed, separated, integrated, sunsetted", process: "Recheck status → capture product evidence → flag unresolved transitions", output: "Lifecycle and integration state", status: "Research mapped" },
+  { name: "Ownership and roll-up map", cadence: "Monthly", coverage: "Sponsors, operating companies, add-ons, shared ownership", process: "Confirm sponsor page → separate ownership from operational integration", output: "Board-ready ownership map", status: "Research mapped" },
+  { name: "Product absorption monitor", cadence: "Weekly", coverage: "Navigation, packaging, product names, redirects, release notes", process: "Snapshot surfaces → compare names/modules → require observable evidence", output: "Retained, absorbed, unified, or pending", status: "Research mapped" },
+  { name: "Executive diligence brief", cadence: "On demand", coverage: "Selected company, sponsor, domain, and time window", process: "Assemble facts → isolate inference → surface open diligence questions", output: "Exportable one-page brief", status: "Designed" },
 ];
