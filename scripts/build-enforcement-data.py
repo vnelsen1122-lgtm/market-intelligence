@@ -87,7 +87,7 @@ def number(value: str) -> float:
 
 def sector_code(naics: str) -> str:
     digits = re.sub(r"\D", "", naics or "")
-    if len(digits) < 2:
+    if len(digits) < 2 or not digits.strip("0"):
         return "Unknown"
     prefix = digits[:2]
     return "31-33" if prefix in {"31", "32", "33"} else "44-45" if prefix in {"44", "45"} else "48-49" if prefix in {"48", "49"} else prefix
@@ -152,7 +152,8 @@ def main() -> None:
     for row in workbook_rows:
         key = inspection_key(row["INSPECTION_NUMBER"])
         inspection = inspections.get(key, {})
-        naics = (inspection.get("NAICS_CODE") or "").strip()
+        raw_naics = (inspection.get("NAICS_CODE") or "").strip()
+        naics = "" if raw_naics and not re.sub(r"\D", "", raw_naics).strip("0") else raw_naics
         cases.append({
             "inspectionNumber": row["INSPECTION_NUMBER"],
             "activityNumber": key,
@@ -203,7 +204,7 @@ def main() -> None:
             "initialPenalty": sum(case["initialPenalty"] for case in cases),
             "source": "enforcement_cases_osha_revised_march.xlsx + OSHA enforcement bulk files",
             "retrieved": datetime.now().date().isoformat(),
-            "joinKey": "inspection number → OSHA ACTIVITY_NR",
+            "joinKey": "inspection number base → OSHA ACTIVITY_NR; zero-filled NAICS remains unknown",
         },
         "cases": cases,
         "states": sorted(({"state": key, **value} for key, value in state_summary.items()), key=lambda item: item["penalty"], reverse=True),
