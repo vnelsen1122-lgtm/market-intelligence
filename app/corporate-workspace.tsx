@@ -96,7 +96,7 @@ export function CorporateWorkspace() {
   const filtered = useMemo(() => corporateEvents.filter((event) => {
     const inWindow = new Date(`${event.announcedAt}T00:00:00Z`) >= cutoff(windowMonths);
     return inWindow && (eventType === "All events" || event.type === eventType) && (domain === "All domains" || event.domain === domain);
-  }), [domain, eventType, windowMonths]);
+  }).sort((left, right) => right.announcedAt.localeCompare(left.announcedAt)), [domain, eventType, windowMonths]);
   const selected = filtered.find((event) => event.id === selectedId) ?? filtered[0];
   const domains = Array.from(new Set(corporateEvents.map((event) => event.domain)));
   const eventTypes = Array.from(new Set(corporateEvents.map((event) => event.type)));

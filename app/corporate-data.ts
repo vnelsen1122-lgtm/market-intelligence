@@ -300,8 +300,8 @@ export const corporateEvents: CorporateEvent[] = [
   {
     id: "mitti-rebrand-2026",
     announcedAt: "2026-08-11",
-    company: "Mitti",
-    counterparty: "SafetyCulture",
+    company: "SafetyCulture",
+    counterparty: "Mitti",
     type: "Rebrand",
     status: "Rebranded",
     domain: "Core EHS",
