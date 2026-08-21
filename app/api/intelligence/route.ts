@@ -20,7 +20,7 @@ type EconomicIndicator = {
   denominatorUnit: "Covered employment and establishments";
 };
 
-const qcewSegments = [
+export const qcewSegments = [
   { id: "construction-commercial", segmentId: "construction-commercial", label: "Commercial & institutional construction", naics: "236220", fileCode: "236220", coverageLevel: "Exact NAICS" },
   { id: "construction-infrastructure", segmentId: "construction-infrastructure", label: "Heavy civil & infrastructure", naics: "237", fileCode: "237", coverageLevel: "NAICS proxy" },
   { id: "construction-data-centers", segmentId: "construction-data-centers", label: "Data center construction", naics: "236220", fileCode: "236220", coverageLevel: "NAICS proxy" },
@@ -46,6 +46,13 @@ const qcewSegments = [
   { id: "waste-remediation", segmentId: "waste-remediation", label: "Remediation services", naics: "562910", fileCode: "562910", coverageLevel: "Exact NAICS" },
   { id: "waste-material-recovery", segmentId: "waste-material-recovery", label: "Materials recovery facilities", naics: "562920", fileCode: "562920", coverageLevel: "Exact NAICS" },
   { id: "water-utilities", segmentId: "water-utilities", label: "Water, sewage & other systems", naics: "2213", fileCode: "2213", coverageLevel: "Exact NAICS" },
+  { id: "mining-metal-nonmetal", segmentId: "mining-metal-nonmetal", label: "Metal & nonmetal mining", naics: "212", fileCode: "212", coverageLevel: "NAICS proxy" },
+  { id: "mining-coal", segmentId: "mining-coal", label: "Coal mining", naics: "2121", fileCode: "2121", coverageLevel: "Exact NAICS" },
+  { id: "transport-trucking", segmentId: "transport-trucking", label: "Truck transportation", naics: "484", fileCode: "484", coverageLevel: "Exact NAICS" },
+  { id: "transport-warehousing", segmentId: "transport-warehousing", label: "Warehousing & storage", naics: "493", fileCode: "493", coverageLevel: "Exact NAICS" },
+  { id: "agriculture-production", segmentId: "agriculture-production", label: "Crop & animal production", naics: "11", fileCode: "11", coverageLevel: "NAICS proxy" },
+  { id: "healthcare-hospitals", segmentId: "healthcare-hospitals", label: "Hospitals & residential care", naics: "62", fileCode: "62", coverageLevel: "NAICS proxy" },
+  { id: "services-financial", segmentId: "services-financial", label: "Finance, insurance & corporate offices", naics: "52", fileCode: "52", coverageLevel: "NAICS proxy" },
 ] as const;
 
 function parseCsvRow(row: string) {
@@ -114,8 +121,12 @@ function classifyVerticals(text: string) {
   const matches = [
     { vertical: "Construction", terms: ["construction", "contractor", "jobsite", "excavation", "crane"] },
     { vertical: "Manufacturing", terms: ["manufactur", "chemical", "machine", "plant", "process safety"] },
-    { vertical: "Energy & Utilities", terms: ["energy", "utility", "electric", "oil", "gas", "pipeline", "renewable"] },
-    { vertical: "Waste & Water", terms: ["waste", "water", "wastewater", "discharge", "hazardous material"] },
+    { vertical: "Oil & Gas", terms: ["oil", "gas", "pipeline", "drilling"] },
+    { vertical: "Renewables", terms: ["renewable", "solar", "wind", "battery"] },
+    { vertical: "Utilities", terms: ["utility", "electric", "power generation", "transmission"] },
+    { vertical: "Mining", terms: ["mine", "mining", "quarry"] },
+    { vertical: "Waste & Environmental Services", terms: ["waste", "remediation", "hazardous material"] },
+    { vertical: "Water & Wastewater", terms: ["water", "wastewater", "discharge"] },
   ].filter((group) => group.terms.some((term) => normalized.includes(term))).map((group) => group.vertical);
   return matches.length ? matches : ["Applicability review required"];
 }
